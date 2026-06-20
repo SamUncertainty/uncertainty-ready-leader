@@ -10,25 +10,25 @@
     --bg:#0e1116; --panel:#161b22; --ink:#f2f4f7; --muted:#9aa4b2;
     --line:#2a313c; --accent:#c8a24a; --accent-ink:#0e1116;
     --ok:#3fb27f; --warn:#d98c4a; --radius:14px;
-    --maxw:620px;
+    --maxw:640px;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased;line-height:1.5}
-  .wrap{max-width:var(--maxw);margin:0 auto;padding:28px 20px 64px;min-height:100dvh;display:flex;flex-direction:column}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:28px 20px 72px;min-height:100dvh;display:flex;flex-direction:column}
   .brand{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:6px}
   h1{font-size:26px;line-height:1.2;margin:.1em 0 .4em;font-weight:650}
   h2{font-size:21px;line-height:1.25;margin:.2em 0 .5em;font-weight:600}
   p{margin:.5em 0;color:var(--ink)}
   .muted{color:var(--muted)}
   .small{font-size:14px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin:14px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin:14px 0}
   label.field{display:block;margin:14px 0 6px;font-weight:600;font-size:15px}
   input[type=text],input[type=email],textarea{
     width:100%;background:#0b0f14;border:1px solid var(--line);border-radius:10px;
     color:var(--ink);padding:13px 14px;font-size:16px;font-family:inherit}
-  textarea{min-height:120px;resize:vertical}
+  textarea{min-height:96px;resize:vertical}
   input:focus,textarea:focus{outline:none;border-color:var(--accent)}
   .btn{appearance:none;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);
     font-weight:700;font-size:16px;padding:15px 22px;width:100%;cursor:pointer;margin-top:18px}
@@ -37,24 +37,23 @@
   .q{padding:16px 0;border-bottom:1px solid var(--line)}
   .q:last-child{border-bottom:0}
   .q .qtext{font-size:16px;font-weight:550;margin-bottom:12px}
-  .scale{display:flex;gap:6px;flex-wrap:wrap}
-  .scale button{flex:1 1 0;min-width:38px;background:#0b0f14;border:1px solid var(--line);color:var(--ink);
-    border-radius:10px;padding:11px 0;font-size:15px;font-weight:600;cursor:pointer}
+  .scale{display:flex;gap:4px;flex-wrap:wrap}
+  .scale button{flex:1 1 auto;min-width:30px;background:#0b0f14;border:1px solid var(--line);color:var(--ink);
+    border-radius:9px;padding:10px 0;font-size:14px;font-weight:600;cursor:pointer}
   .scale button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-  .scale-ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:7px}
+  .scale-ends{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-top:7px}
   .choice{display:block;width:100%;text-align:left;background:#0b0f14;border:1px solid var(--line);
     color:var(--ink);border-radius:10px;padding:14px 16px;font-size:16px;cursor:pointer;margin-top:10px}
   .choice[aria-pressed=true]{border-color:var(--accent);background:rgba(200,162,74,.10)}
   .privacy{font-size:13px;color:var(--muted);border-left:2px solid var(--accent);padding:6px 0 6px 12px;margin:16px 0}
+  .anon{font-size:12px;letter-spacing:.04em;color:var(--ok);font-weight:600;margin-top:6px}
   .progress{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
   .center{text-align:center;margin:auto 0}
   .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 1.4s infinite ease-in-out}
   @keyframes pulse{0%,100%{opacity:.25;transform:scale(.85)}50%{opacity:1;transform:scale(1)}}
   .err{color:var(--warn);font-size:14px;margin-top:8px;min-height:18px}
-  .hidden{display:none}
   .lens-tag{display:inline-block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
     color:var(--accent);font-weight:700;margin-bottom:8px}
-  .spacer{flex:1 1 auto}
   .net{position:fixed;bottom:0;left:0;right:0;background:var(--warn);color:#1a1205;text-align:center;
     font-size:13px;padding:8px;display:none}
   a{color:var(--accent)}
@@ -66,14 +65,16 @@
 
 <script>
 /* =========================================================================
-   THE UNCERTAINTY-READY LEADER   participant web app
+   THE UNCERTAINTY-READY LEADER  participant web app
+   Implements the locked Measurement Battery v2.0 (Katherine, 19 June 2026)
+   per URL_App_Locked_Measures_Spec_for_Code_v2.md. Item wording, IDs, scale,
+   timing and weighting are locked; do not change without a new version.
+
    Single page, vanilla JS, no runtime dependencies (resilient on phones).
    Writes to Supabase (participant + response), paired by a browser token.
-   Anonymity paramount: email isolated, used only for reflections.
-
-   ALL participant-facing content lives in CONTENT below. It is PLACEHOLDER
-   pending Katherine's lock (battery, paradox, control, prompts, scale,
-   UTOS weighting). Final wording drops in here with no other code changes.
+   Anonymity paramount: email kept client-side only, never stored next to answers.
+   Top-level payload keys (horizon, altitude, agency, control, utos, paradox)
+   are unchanged so session_aggregates and the live dashboard keep working.
    ========================================================================= */
 
 /* ---- Supabase (publishable/anon key is safe in the client) ---- */
@@ -87,81 +88,115 @@ const SESSIONS = {
 };
 const DEFAULT_SESSION = "doodle-2026-06-22"; // fallback if ?s= is missing
 
-/* ===================== PLACEHOLDER CONTENT (Katherine to lock) ===================== */
+/* ===================== LOCKED CONTENT v2.0 (do not reword) ===================== */
 const CONTENT = {
-  /* Response scale. Katherine: 1-to-7 agreement (current) or 0-to-10 to echo the lab. */
-  scale: { min: 1, max: 7, minLabel: "Strongly disagree", maxLabel: "Strongly agree" },
+  /* 0 to 10 scale, used for all quantitative items and the qpre3 permission item. */
+  scale: { min: 0, max: 10, minLabel: "Not at all like me right now", maxLabel: "Completely like me right now" },
 
-  /* The state battery. Each item belongs to one lens. Lens score = mean of its items.
-     Placeholder items are the prior (v2) present-tense items; add/replace freely. */
-  items: [
-    { id: "hor_1", lens: "horizon",  text: "Right now, I am thinking about my decisions in terms of the bigger picture, not just the next steps." },
-    { id: "hor_2", lens: "horizon",  text: "Right now, I can see the longer-term, human upside, not only the next quarter." },
-    { id: "alt_1", lens: "altitude", text: "Right now, I can step back and see the wider terrain around the decisions I am carrying, not just the immediate tasks." },
-    { id: "alt_2", lens: "altitude", text: "Right now, I am clear on whose perspective I am still missing." },
-    { id: "age_1", lens: "agency",   text: "Right now, I am confident I can work my way to a good decision under uncertainty." },
-    { id: "age_2", lens: "agency",   text: "Right now, I can see my own part in the situations I am facing, not just the external blockers." }
-  ],
-
-  /* Trait control. Expected NOT to move; the sceptic-proof anchor. */
-  control: { id: "control", text: "People should take into consideration evidence that goes against their beliefs." },
-
-  /* UTOS composite weighting across the three lenses (placeholder: equal). */
-  utosWeights: { horizon: 1, altitude: 1, agency: 1 },
-
-  /* The Decisiveness Paradox (the spine). Forced binary. */
+  /* Paradox (King et al 2020). Forced binary, stored raw, NOT in HTO.
+     Mapping (locked): A = decisive-but-negative, B = indecisive-but-positive (better outcome). */
   paradox: {
-    prompt: "In a moment of real uncertainty, which is closer to your instinct?",
-    optionA: "I would rather be seen as decisive, even if it leads to a worse outcome.",
-    optionB: "I would rather tolerate looking indecisive, if it leads to a better outcome."
+    id: "paradox",
+    prompt: "In uncertain times, if being decisive led to a negative outcome and being indecisive led to a positive outcome, which would you choose?",
+    optionA: "Be decisive, even though it leads to the negative outcome.",
+    optionB: "Be indecisive, if it leads to the positive outcome."
   },
 
-  /* The three during-session reflections, revealed in step with the room.
-     Order is fixed: Horizon (past), Altitude (present), Agency (future). */
+  /* The three lenses, 4 items each, averaged to the lens score. */
+  lenses: [
+    { key: "horizon", label: "Horizon", ids: ["H1","H2","H3","H4"] },
+    { key: "altitude", label: "Altitude", ids: ["A1","A2","A3","A4"] },
+    { key: "agency", label: "Agency", ids: ["AG1","AG2","AG3","AG4"] }
+  ],
+
+  /* Exact item wording, keyed by stable ID. */
+  items: {
+    H1: "Right now, I am thinking about this challenge in terms of what truly matters, not just what is immediately urgent.",
+    H2: "Right now, I can see the longer-term human stakes of the decisions I am carrying, not only the near-term pressure.",
+    H3: "Right now, I am able to hold a meaningful time horizon in mind, one where the decision will land, not just when it is due.",
+    H4: "Right now, I can distinguish between what feels urgent and what is actually important.",
+    A1: "Right now, I can step back and see the wider terrain around the decisions I am carrying.",
+    A2: "Right now, I am clear on whose perspective I am still missing.",
+    A3: "Right now, I could articulate the strongest version of a view that challenges my own.",
+    A4: "Right now, I am not so close to this decision that I have lost sight of the people it affects.",
+    AG1: "Right now, I am confident I can work my way to a good decision under uncertainty.",
+    AG2: "Right now, I can see my own part in what I am facing, not just the external blockers.",
+    AG3: "Right now, my emotional reaction to uncertainty feels like information I can use, not a verdict on my capability.",
+    AG4: "Right now, I trust my own process for moving through ambiguity."
+  },
+
+  /* Post-only confidence item, stored raw under top-level ag5, NOT in any average. */
+  agencyPostOnly: { id: "AG5", text: "Having worked through this session, I feel more confident I can reach a good decision on what I am carrying." },
+
+  /* Control (trait). C1 is the single control for now; it feeds the top-level control key. */
+  control: { id: "C1", text: "My core beliefs about how to lead have stayed broadly consistent over the past few years." },
+
+  /* Qualitative, pre-session (4). q3 is a 0 to 10 rated item. */
+  qualPre: [
+    { id: "q1", type: "text", text: "What is the biggest uncertainty you currently face?" },
+    { id: "q2", type: "text", text: "What is the opportunity in it?" },
+    { id: "q3", type: "scale", text: "On a scale of 0 to 10, how much does your organisation currently give you permission to sit with uncertainty rather than forcing a premature decision?" },
+    { id: "q4", type: "text", text: "What is the greatest barrier that holds you back from having that permission?" }
+  ],
+
+  /* Qualitative, post-session (2). */
+  qualPost: [
+    { id: "q1", type: "text", text: "What, if anything, shifted in how you will approach the decisions you are carrying?" },
+    { id: "q2", type: "text", text: "What one commitment will you make in the next seven days to practise holding the open?" }
+  ],
+
+  /* In-session reflection blocks. One per lens, anchored past then present then future.
+     The anonymity reminder in r2_1 is MANDATORY and is part of the locked wording. */
   reflections: [
-    { key: "horizon_past", lens: "Horizon", title: "A decision you regret",
-      prompt: "Bring to mind a decision you regret, one you made under pressure. What was the time pressure you were actually under, and what would the right horizon have been? Not the deadline you accepted. The one you could have argued for." },
-    { key: "altitude_present", lens: "Altitude", title: "A decision in front of you now",
-      prompt: "Take a decision you are facing now. Name the strategic, boundaried period that lets you explore without pressure yet still delivers a clear endpoint (name the date). Then name three diverse sources of perspective you could actually reach in that window, that would genuinely counter your current view." },
-    { key: "agency_future", lens: "Agency", title: "A dilemma still ahead",
-      prompt: "Take a dilemma still ahead of you. What is the strategic, boundaried period? Who are the three diverse counter-views you would want by then? And if you hold this open with full discipline, who do you become while you are holding it?" }
+    { key: "horizon", label: "Horizon", anchor: "A past uncertainty", questions: [
+      { id: "r1_1", text: "Describe a past uncertainty you faced." },
+      { id: "r1_2", text: "What is the strategic, boundaried period that would have given you genuine room to explore, and still had a hard endpoint at which the decision would have been made regardless?" }
+    ]},
+    { key: "altitude", label: "Altitude", anchor: "A present uncertainty", questions: [
+      { id: "r2_1", text: "Describe a current uncertainty you are carrying. You do not need to name names, just enough detail for you to hold it clearly in mind. All responses are anonymous.", anonymity: true },
+      { id: "r2_2", text: "What is the strategic, boundaried period that gives you genuine room to explore, and still has a hard endpoint at which the decision gets made regardless?" },
+      { id: "r2_3", text: "Name three diverse sources of perspective you could actually reach in that window that would genuinely counter your view." }
+    ]},
+    { key: "agency", label: "Agency", anchor: "A future uncertainty", questions: [
+      { id: "r3_1", text: "Describe an uncertainty you know is coming." },
+      { id: "r3_2", text: "What is the strategic, boundaried period that gives you genuine room to explore, and still has a hard endpoint at which the decision gets made regardless?" },
+      { id: "r3_3", text: "Name three diverse sources of perspective you could actually reach in that window that would genuinely counter your view." },
+      { id: "r3_4", text: "If you hold this open with full discipline, who do you become while you are holding it?" }
+    ]}
   ],
 
   privacy: "Your answers are anonymous. We use your email only to send you your own reflections afterwards. Data is held securely in our own UK database."
 };
-/* =================================================================================== */
+/* ============================================================================== */
 
 /* ---------------------------- small helpers ---------------------------- */
-const $ = (sel, root) => (root||document).querySelector(sel);
 const el = (html) => { const t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstChild; };
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const lenses = ["horizon","altitude","agency"];
 
 function getSession(){
   const p = new URLSearchParams(location.search).get("s");
-  if (p && SESSIONS[p]) return p;
-  if (p) return p; // unknown code still accepted (facilitator may add codes); just used as-is
+  if (p) return p;            // unknown codes accepted as-is (facilitator may add them)
   return DEFAULT_SESSION;
 }
 const SESSION = getSession();
-const LS_KEY = "url:" + SESSION;
+const LS_KEY = "url2:" + SESSION;
 
-function loadState(){
-  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch(e){ return {}; }
-}
-function saveState(s){ try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch(e){} }
+function loadState(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch(e){ return {}; } }
+function saveState(){ try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} }
 
 let state = loadState();
 if (!state.token) state.token = (crypto.randomUUID ? crypto.randomUUID()
   : "t-"+Date.now()+"-"+Math.random().toString(16).slice(2));
 if (!state.stage) state.stage = "welcome";
-state.answers = state.answers || {};   // working store for current battery
-saveState(state);
+state.preAns = state.preAns || {};   state.qpreAns = state.qpreAns || {};
+state.postAns = state.postAns || {};  state.qpostAns = state.qpostAns || {};
+state.during = state.during || {};
+saveState();
 
 /* ---------------------------- resilient inserts ---------------------------- */
-/* Failed writes are queued in localStorage so a dropped phone signal never
-   loses a participant's data; the queue flushes on load and after each write. */
-const Q_KEY = "url:queue";
+/* Failed writes queue in localStorage so a dropped phone signal never loses data;
+   the queue flushes on load, when back online, and after each write. */
+const Q_KEY = "url2:queue";
 function queueGet(){ try { return JSON.parse(localStorage.getItem(Q_KEY))||[]; } catch(e){ return []; } }
 function queueSet(q){ try { localStorage.setItem(Q_KEY, JSON.stringify(q)); } catch(e){} }
 function showNet(on){ document.getElementById("netbar").style.display = on ? "block" : "none"; }
@@ -169,85 +204,83 @@ function showNet(on){ document.getElementById("netbar").style.display = on ? "bl
 async function postRow(table, body){
   const res = await fetch(SB_URL + "/rest/v1/" + table, {
     method: "POST",
-    headers: {
-      "apikey": SB_KEY,
-      "Authorization": "Bearer " + SB_KEY,
-      "Content-Type": "application/json",
-      "Prefer": "return=minimal"
-    },
+    headers: { "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
     body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error(table + " insert failed: " + res.status + " " + (await res.text()));
   return true;
 }
-
 async function flushQueue(){
   let q = queueGet();
   if (!q.length){ showNet(false); return; }
   const remaining = [];
-  for (const item of q){
-    try { await postRow(item.table, item.body); }
-    catch(e){ remaining.push(item); }
-  }
+  for (const item of q){ try { await postRow(item.table, item.body); } catch(e){ remaining.push(item); } }
   queueSet(remaining);
   showNet(remaining.length > 0);
 }
-
-/* Insert, retry once, else queue and keep going (never block a live room). */
 async function insertRow(table, body){
   try { await postRow(table, body); showNet(false); return true; }
   catch(e1){
     try { await postRow(table, body); showNet(false); return true; }
-    catch(e2){
-      const q = queueGet(); q.push({ table, body }); queueSet(q);
-      showNet(true);
-      console.warn("Queued for retry:", table, e2.message);
-      return false;
-    }
+    catch(e2){ const q = queueGet(); q.push({ table, body }); queueSet(q); showNet(true); console.warn("Queued for retry:", table, e2.message); return false; }
   }
 }
 
 /* ---------------------------- scoring ---------------------------- */
-function lensMean(answers, lens){
-  const xs = CONTENT.items.filter(i=>i.lens===lens).map(i=>answers[i.id]).filter(v=>typeof v==="number");
+function lensMean(ans, ids){
+  const xs = ids.map(id=>ans[id]).filter(v=>typeof v==="number");
   if (!xs.length) return null;
   return xs.reduce((a,b)=>a+b,0)/xs.length;
 }
-function computeUtos(means){
-  const w = CONTENT.utosWeights;
-  let num=0, den=0;
-  for (const l of lenses){ if (typeof means[l]==="number"){ num += means[l]*(w[l]||0); den += (w[l]||0); } }
-  return den ? num/den : null;
-}
-function buildBatteryPayload(answers){
-  const means = {}; lenses.forEach(l => means[l] = lensMean(answers, l));
-  return {
-    paradox: answers.paradox || null,
+/* Build the pre or post battery payload exactly per the locked contract. */
+function buildBatteryPayload(phase){
+  const ans = phase==="pre" ? state.preAns : state.postAns;
+  const q   = phase==="pre" ? state.qpreAns : state.qpostAns;
+  const means = {};
+  CONTENT.lenses.forEach(L => means[L.key] = lensMean(ans, L.ids));
+  const utos = (means.horizon + means.altitude + means.agency) / 3; // HTO, equal-weight
+  const items = {};
+  CONTENT.lenses.forEach(L => L.ids.forEach(id => items[id] = ans[id]));
+  items.C1 = ans.C1;
+  const payload = {
+    paradox: ans.paradox || null,
+    items,
     horizon: means.horizon, altitude: means.altitude, agency: means.agency,
-    control: (typeof answers.control==="number") ? answers.control : null,
-    utos: computeUtos(means),
-    items: Object.fromEntries(
-      CONTENT.items.map(i=>[i.id, answers[i.id]]).concat([["control", answers.control]])
-    )
+    control: ans.C1,   // top-level control = C1 (primary trait) so the dashboard reads flat
+    utos               // HTO composite, stored under utos so session_aggregates is unchanged
   };
+  if (phase === "pre"){
+    payload.qual_pre = { q1: q.q1||"", q2: q.q2||"", q3: (typeof q.q3==="number"?q.q3:null), q4: q.q4||"" };
+  } else {
+    payload.ag5 = (typeof ans.AG5==="number") ? ans.AG5 : null; // post-only, raw, not in averages
+    payload.qual_post = { q1: q.q1||"", q2: q.q2||"" };
+  }
+  return payload;
 }
 
 /* ---------------------------- render ---------------------------- */
 const app = document.getElementById("app");
 function render(){
-  saveState(state);
+  saveState();
   app.innerHTML = "";
   const view = ({
-    welcome: viewWelcome, pre: viewBattery, holding1: viewHolding1,
-    during: viewDuring, holding2: viewHolding2, post: viewBattery, close: viewClose
+    welcome: viewWelcome,
+    pre_battery: () => viewBattery("pre"),
+    pre_qual: () => viewQual("pre"),
+    holding1: viewHolding1,
+    during: viewDuring,
+    holding2: viewHolding2,
+    post_battery: () => viewBattery("post"),
+    post_qual: () => viewQual("post"),
+    close: viewClose
   })[state.stage] || viewWelcome;
   app.appendChild(view());
   window.scrollTo(0,0);
 }
 
-/* ---- scale + paradox widgets ---- */
-function scaleRow(item, current, onPick){
-  const wrap = el(`<div class="q"><div class="qtext">${esc(item.text)}</div></div>`);
+/* ---- widgets ---- */
+function scaleRow(text, current, onPick){
+  const wrap = el(`<div class="q"><div class="qtext">${esc(text)}</div></div>`);
   const row = el(`<div class="scale"></div>`);
   for (let n=CONTENT.scale.min; n<=CONTENT.scale.max; n++){
     const b = el(`<button type="button" aria-pressed="${current===n}">${n}</button>`);
@@ -285,54 +318,93 @@ function viewWelcome(){
     state.first_name = fn; state.email = em;
     const btn = node.querySelector("#start"); btn.disabled = true; btn.textContent = "One moment.";
     /* PRIVACY: email is NOT persisted next to answers. It stays in localStorage only,
-       to be handed to the (server-side) email function at send time if the participant
+       to be handed to the server-side email function at send time if the participant
        opts in at the end. The participant row is anonymous: token + session + first name. */
     await insertRow("participant", { token: state.token, session_code: SESSION, first_name: fn });
-    state.stage = "pre"; state.answers = {}; render();
+    state.stage = "pre_battery"; render();
   });
   return node;
 }
 
-/* ---------------- Battery (pre and post share this) ---------------- */
-function viewBattery(){
-  const isPre = state.stage === "pre";
-  const a = state.answers;
+/* ---------------- Quantitative battery (pre and post) ---------------- */
+function viewBattery(phase){
+  const isPre = phase === "pre";
+  const ans = isPre ? state.preAns : state.postAns;
   const node = el(`<div>
     <div class="progress">${isPre ? "Before we begin" : "One last check-in"}</div>
     <h2>${isPre ? "How things sit right now" : "How things sit now"}</h2>
-    <p class="muted small">Answer on instinct.</p>
+    <p class="muted small">Answer on instinct, on a scale of 0 to 10.</p>
     <div class="card" id="battery"></div>
     <div class="err" id="batErr"></div>
     <button class="btn" id="next">Continue</button>
   </div>`);
   const box = node.querySelector("#battery");
 
-  /* Paradox first (the spine) */
+  /* Paradox first (the spine). Stored A/B per locked mapping. */
   const par = el(`<div class="q"><div class="qtext">${esc(CONTENT.paradox.prompt)}</div></div>`);
   [["A",CONTENT.paradox.optionA],["B",CONTENT.paradox.optionB]].forEach(([k,txt])=>{
-    const c = el(`<button type="button" class="choice" aria-pressed="${a.paradox===k}">${esc(txt)}</button>`);
-    c.addEventListener("click", ()=>{ a.paradox=k; saveState(state); render(); });
+    const c = el(`<button type="button" class="choice" aria-pressed="${ans.paradox===k}">${esc(txt)}</button>`);
+    c.addEventListener("click", ()=>{ ans.paradox=k; saveState(); render(); });
     par.appendChild(c);
   });
   box.appendChild(par);
 
-  /* State items */
-  CONTENT.items.forEach(it=>{
-    box.appendChild(scaleRow(it, a[it.id], (n)=>{ a[it.id]=n; saveState(state); render(); }));
-  });
-  /* Control */
-  box.appendChild(scaleRow(CONTENT.control, a.control, (n)=>{ a.control=n; saveState(state); render(); }));
+  /* Lens items in locked order: H1-H4, A1-A4, AG1-AG4. */
+  CONTENT.lenses.forEach(L => L.ids.forEach(id => {
+    box.appendChild(scaleRow(CONTENT.items[id], ans[id], (n)=>{ ans[id]=n; saveState(); render(); }));
+  }));
+  /* Post-only AG5. */
+  if (!isPre){
+    box.appendChild(scaleRow(CONTENT.agencyPostOnly.text, ans.AG5, (n)=>{ ans.AG5=n; saveState(); render(); }));
+  }
+  /* Control C1. */
+  box.appendChild(scaleRow(CONTENT.control.text, ans.C1, (n)=>{ ans.C1=n; saveState(); render(); }));
 
-  node.querySelector("#next").addEventListener("click", async ()=>{
+  node.querySelector("#next").addEventListener("click", ()=>{
     const err = node.querySelector("#batErr");
-    if (!a.paradox){ err.textContent="Please choose A or B."; return; }
-    const missing = CONTENT.items.some(i=>typeof a[i.id]!=="number") || typeof a.control!=="number";
-    if (missing){ err.textContent="Please answer every item."; return; }
+    if (!ans.paradox){ err.textContent="Please choose one of the two options."; return; }
+    const need = [];
+    CONTENT.lenses.forEach(L => L.ids.forEach(id => need.push(id)));
+    need.push("C1");
+    if (!isPre) need.push("AG5");
+    if (need.some(id => typeof ans[id] !== "number")){ err.textContent="Please answer every item."; return; }
+    state.stage = isPre ? "pre_qual" : "post_qual"; render();
+  });
+  return node;
+}
+
+/* ---------------- Qualitative (pre 4, post 2) ---------------- */
+function viewQual(phase){
+  const isPre = phase === "pre";
+  const list = isPre ? CONTENT.qualPre : CONTENT.qualPost;
+  const store = isPre ? state.qpreAns : state.qpostAns;
+  const node = el(`<div>
+    <div class="progress">${isPre ? "A few words in your own voice" : "Before you go"}</div>
+    <h2>${isPre ? "Where you are starting from" : "What you are taking away"}</h2>
+    <div class="card" id="qbox"></div>
+    <div class="err" id="qErr"></div>
+    <button class="btn" id="next">${isPre ? "Continue" : "Finish"}</button>
+  </div>`);
+  const box = node.querySelector("#qbox");
+  list.forEach(item => {
+    if (item.type === "scale"){
+      box.appendChild(scaleRow(item.text, store[item.id], (n)=>{ store[item.id]=n; saveState(); render(); }));
+    } else {
+      const q = el(`<div class="q"><div class="qtext">${esc(item.text)}</div></div>`);
+      const ta = el(`<textarea placeholder="Write as much or as little as you like."></textarea>`);
+      ta.value = store[item.id] || "";
+      ta.addEventListener("input", ()=>{ store[item.id]=ta.value; saveState(); });
+      q.appendChild(ta);
+      box.appendChild(q);
+    }
+  });
+  node.querySelector("#next").addEventListener("click", async ()=>{
+    const err = node.querySelector("#qErr");
+    if (isPre && typeof store.q3 !== "number"){ err.textContent="Please answer the 0 to 10 permission question."; return; }
     const btn = node.querySelector("#next"); btn.disabled=true; btn.textContent="Saving.";
-    const payload = buildBatteryPayload(a);
-    await insertRow("response", { token: state.token, session_code: SESSION, phase: isPre?"pre":"post", payload });
-    if (isPre){ state.stage="holding1"; state.answers={}; }
-    else { state.stage="close"; }
+    const payload = buildBatteryPayload(phase);
+    await insertRow("response", { token: state.token, session_code: SESSION, phase, payload });
+    state.stage = isPre ? "holding1" : "close";
     render();
   });
   return node;
@@ -347,7 +419,7 @@ function viewHolding1(){
     <p style="margin-top:22px"><span class="dot"></span></p>
     <button class="btn secondary" id="go">Continue when prompted</button>
   </div>`);
-  node.querySelector("#go").addEventListener("click", ()=>{ state.stage="during"; state.during=state.during||{}; state.dstep=0; render(); });
+  node.querySelector("#go").addEventListener("click", ()=>{ state.dblock=0; state.stage="during"; render(); });
   return node;
 }
 function viewHolding2(){
@@ -358,41 +430,43 @@ function viewHolding2(){
     <p style="margin-top:22px"><span class="dot"></span></p>
     <button class="btn" id="go">Continue when prompted</button>
   </div>`);
-  node.querySelector("#go").addEventListener("click", ()=>{ state.stage="post"; state.answers={}; render(); });
+  node.querySelector("#go").addEventListener("click", ()=>{ state.stage="post_battery"; render(); });
   return node;
 }
 
-/* ---------------- During: three reflections, revealed in step ---------------- */
+/* ---------------- During: three reflection blocks, revealed in step ---------------- */
 function viewDuring(){
-  state.during = state.during || {};
-  const i = state.dstep || 0;
-  const r = CONTENT.reflections[i];
+  const i = state.dblock || 0;
+  const block = CONTENT.reflections[i];
   const node = el(`<div>
     <div class="progress">Reflection ${i+1} of ${CONTENT.reflections.length}</div>
-    <span class="lens-tag">${esc(r.lens)}</span>
-    <h2>${esc(r.title)}</h2>
-    <p>${esc(r.prompt)}</p>
-    <div class="card">
-      <textarea id="ref" placeholder="Write as much or as little as you like.">${esc(state.during[r.key]||"")}</textarea>
-    </div>
-    <div class="err" id="dErr"></div>
+    <span class="lens-tag">${esc(block.label)}</span>
+    <h2>${esc(block.anchor)}</h2>
+    <div class="card" id="rbox"></div>
     <button class="btn" id="next">${i < CONTENT.reflections.length-1 ? "Next reflection" : "Done"}</button>
-    <button class="btn secondary" id="skip">Skip this one</button>
   </div>`);
-  const ta = node.querySelector("#ref");
-  ta.addEventListener("input", ()=>{ state.during[r.key]=ta.value; saveState(state); });
-
-  async function advance(){
-    state.during[r.key] = ta.value;
-    if (i < CONTENT.reflections.length-1){ state.dstep = i+1; saveState(state); render(); return; }
+  const box = node.querySelector("#rbox");
+  block.questions.forEach(qq => {
+    const q = el(`<div class="q"><div class="qtext">${esc(qq.text)}</div></div>`);
+    if (qq.anonymity) q.querySelector(".qtext").appendChild(el(`<div class="anon">Anonymous. No names are stored.</div>`));
+    const ta = el(`<textarea placeholder="Write as much or as little as you like."></textarea>`);
+    ta.value = state.during[qq.id] || "";
+    ta.addEventListener("input", ()=>{ state.during[qq.id]=ta.value; saveState(); });
+    q.appendChild(ta);
+    box.appendChild(q);
+  });
+  node.querySelector("#next").addEventListener("click", async ()=>{
+    if (i < CONTENT.reflections.length-1){ state.dblock = i+1; saveState(); render(); return; }
     const btn = node.querySelector("#next"); btn.disabled=true; btn.textContent="Saving.";
+    /* Assemble reflections grouped by lens, exactly per the locked during payload. */
     const reflections = {};
-    CONTENT.reflections.forEach(x => reflections[x.key] = state.during[x.key] || "");
-    await insertRow("response", { token: state.token, session_code: SESSION, phase:"during", payload: { reflections } });
-    state.stage="holding2"; render();
-  }
-  node.querySelector("#next").addEventListener("click", advance);
-  node.querySelector("#skip").addEventListener("click", ()=>{ ta.value=""; state.during[r.key]=""; advance(); });
+    CONTENT.reflections.forEach(b => {
+      reflections[b.key] = {};
+      b.questions.forEach(qq => reflections[b.key][qq.id] = state.during[qq.id] || "");
+    });
+    await insertRow("response", { token: state.token, session_code: SESSION, phase: "during", payload: { reflections } });
+    state.stage = "holding2"; render();
+  });
   return node;
 }
 
