@@ -1,0 +1,8 @@
+# Ship ONLY the client shell to GitHub Pages. Nothing with secrets or PII.
+.DS_Store
+*.log
+node_modules/
+# Local-only build experiments (NOT for the Pages repo):
+supabase/
+build_function.py
+_scratch/
