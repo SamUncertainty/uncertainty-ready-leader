@@ -284,7 +284,12 @@ function scaleRow(text, current, onPick){
   const row = el(`<div class="scale"></div>`);
   for (let n=CONTENT.scale.min; n<=CONTENT.scale.max; n++){
     const b = el(`<button type="button" aria-pressed="${current===n}">${n}</button>`);
-    b.addEventListener("click", ()=>{ onPick(n); });
+    b.addEventListener("click", ()=>{
+      /* Update selection IN PLACE. No re-render on a tap, so the page never jumps
+         to the top on the 16-item battery. render() runs only on screen changes. */
+      row.querySelectorAll("button").forEach(bb => bb.setAttribute("aria-pressed", String(Number(bb.textContent)===n)));
+      onPick(n);
+    });
     row.appendChild(b);
   }
   wrap.appendChild(row);
@@ -343,22 +348,25 @@ function viewBattery(phase){
   /* Paradox first (the spine). Stored A/B per locked mapping. */
   const par = el(`<div class="q"><div class="qtext">${esc(CONTENT.paradox.prompt)}</div></div>`);
   [["A",CONTENT.paradox.optionA],["B",CONTENT.paradox.optionB]].forEach(([k,txt])=>{
-    const c = el(`<button type="button" class="choice" aria-pressed="${ans.paradox===k}">${esc(txt)}</button>`);
-    c.addEventListener("click", ()=>{ ans.paradox=k; saveState(); render(); });
+    const c = el(`<button type="button" class="choice" data-k="${k}" aria-pressed="${ans.paradox===k}">${esc(txt)}</button>`);
+    c.addEventListener("click", ()=>{
+      par.querySelectorAll(".choice").forEach(cc => cc.setAttribute("aria-pressed", String(cc.getAttribute("data-k")===k)));
+      ans.paradox=k; saveState(); /* no render: keep scroll position */
+    });
     par.appendChild(c);
   });
   box.appendChild(par);
 
   /* Lens items in locked order: H1-H4, A1-A4, AG1-AG4. */
   CONTENT.lenses.forEach(L => L.ids.forEach(id => {
-    box.appendChild(scaleRow(CONTENT.items[id], ans[id], (n)=>{ ans[id]=n; saveState(); render(); }));
+    box.appendChild(scaleRow(CONTENT.items[id], ans[id], (n)=>{ ans[id]=n; saveState(); }));
   }));
   /* Post-only AG5. */
   if (!isPre){
-    box.appendChild(scaleRow(CONTENT.agencyPostOnly.text, ans.AG5, (n)=>{ ans.AG5=n; saveState(); render(); }));
+    box.appendChild(scaleRow(CONTENT.agencyPostOnly.text, ans.AG5, (n)=>{ ans.AG5=n; saveState(); }));
   }
   /* Control C1. */
-  box.appendChild(scaleRow(CONTENT.control.text, ans.C1, (n)=>{ ans.C1=n; saveState(); render(); }));
+  box.appendChild(scaleRow(CONTENT.control.text, ans.C1, (n)=>{ ans.C1=n; saveState(); }));
 
   node.querySelector("#next").addEventListener("click", ()=>{
     const err = node.querySelector("#batErr");
@@ -388,7 +396,7 @@ function viewQual(phase){
   const box = node.querySelector("#qbox");
   list.forEach(item => {
     if (item.type === "scale"){
-      box.appendChild(scaleRow(item.text, store[item.id], (n)=>{ store[item.id]=n; saveState(); render(); }));
+      box.appendChild(scaleRow(item.text, store[item.id], (n)=>{ store[item.id]=n; saveState(); }));
     } else {
       const q = el(`<div class="q"><div class="qtext">${esc(item.text)}</div></div>`);
       const ta = el(`<textarea placeholder="Write as much or as little as you like."></textarea>`);
