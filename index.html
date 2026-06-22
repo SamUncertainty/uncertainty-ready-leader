@@ -95,60 +95,52 @@ const CONTENT = {
   /* 0 to 10 scale, used for all quantitative items and the qpre3 permission item. */
   scale: { min: 0, max: 10, minLabel: "Not at all like me right now", maxLabel: "Completely like me right now" },
 
-  /* Paradox (King et al 2020). Forced binary, stored raw, NOT in HTO.
-     Mapping (locked): A = decisive-but-negative, B = indecisive-but-positive (better outcome). */
+  /* Paradox (canonical SOUS version, signed off). Forced binary, stored raw, NOT in HTO.
+     Mapping: A = decisive/negative, B = indecisive/positive (the better outcome).
+     paradox_b_pct = share choosing B, expected to rise post (matches the dashboard). */
   paradox: {
     id: "paradox",
-    prompt: "In uncertain times, if being decisive led to a negative outcome and being indecisive led to a positive outcome, which would you choose?",
-    optionA: "Be decisive, even though it leads to the negative outcome.",
-    optionB: "Be indecisive, if it leads to the positive outcome."
+    prompt: "Amidst profound uncertainty, in front of your peers, would you prefer to be:",
+    optionA: "Decisive, even if it eventually led to a negative outcome.",
+    optionB: "Indecisive, if that eventually led to a positive outcome."
   },
 
-  /* The three lenses, 4 items each, averaged to the lens score. */
+  /* The three lenses, 3 items each, averaged to the lens score. */
   lenses: [
-    { key: "horizon", label: "Horizon", ids: ["H1","H2","H3","H4"] },
-    { key: "altitude", label: "Altitude", ids: ["A1","A2","A3","A4"] },
-    { key: "agency", label: "Agency", ids: ["AG1","AG2","AG3","AG4"] }
+    { key: "horizon", label: "Horizon", ids: ["H1","H2","H3"] },
+    { key: "altitude", label: "Altitude", ids: ["A1","A2","A3"] },
+    { key: "agency", label: "Agency", ids: ["AG1","AG2","AG3"] }
   ],
 
-  /* Exact item wording, keyed by stable ID. */
+  /* Exact item wording (signed off), keyed by stable ID. */
   items: {
-    H1: "I am thinking about this challenge in terms of what truly matters, not just what is immediately urgent.",
-    H2: "I can see the longer-term human stakes of the decisions I am carrying, not only the near-term pressure.",
-    H3: "I am able to hold a meaningful time horizon in mind, one where the decision will land, not just when it is due.",
-    H4: "I can distinguish between what feels urgent and what is actually important.",
-    A1: "I can step back and see the wider terrain around the decisions I am carrying.",
-    A2: "I am clear on whose perspective I am still missing.",
-    A3: "I could articulate the strongest version of a view that challenges my own.",
-    A4: "I am not so close to this decision that I have lost sight of the people it affects.",
+    H1: "I can see the longer-term human stakes of the uncertain decisions I am carrying, not only the near-term pressure.",
+    H2: "I can hold meaningful time horizons in mind when faced with uncertain decisions, the point where the decision will land, not just when it is due.",
+    H3: "When making decisions, I can distinguish between what feels urgent and what is actually important.",
+    A1: "I can step back and see the wider terrain around the uncertain decisions I am carrying.",
+    A2: "I am clear on whose perspective I am still missing when facing uncertain decisions.",
+    A3: "I can clearly articulate a view that completely challenges my own when facing uncertain decisions.",
     AG1: "I am confident I can work my way to a good decision under uncertainty.",
-    AG2: "I can see my own part in what I am facing, not just the external blockers.",
-    AG3: "My emotional reaction to uncertainty feels like information I can use, not a verdict on my capability.",
-    AG4: "I trust my own process for moving through ambiguity."
+    AG2: "I can see my own part in what I am facing, not just the external blockers, when making a decision under uncertainty.",
+    AG3: "My emotional reaction to uncertainty feels like information I can use, not a verdict on my capability, when making a decision."
   },
 
   /* Post-only confidence item, stored raw under top-level ag5, NOT in any average. */
   agencyPostOnly: { id: "AG5", text: "Having worked through this session, I feel more confident I can reach a good decision on what I am carrying." },
 
-  /* Control (trait). C1 is the single control for now; it feeds the top-level control key. */
+  /* Control (trait). C1 is the single control; it feeds the top-level control key. */
   control: { id: "C1", text: "My core beliefs about how to lead have stayed broadly consistent over the past few years." },
 
-  /* Qualitative, pre-session (4). Stored keys q1..q4 unchanged. Split across two
-     screens: the opener (q1, q2) frames the challenge BEFORE the scored items;
-     the close (q3, q4) follows the scored items. q3 is a 0 to 10 rated item. */
+  /* Qualitative, pre-session: the opener (q1, q2), shown before the scored items
+     to frame the challenge. Stored keys unchanged. */
   qualPreOpen: [
     { id: "q1", type: "text", text: "What is the biggest uncertainty you currently face?" },
     { id: "q2", type: "text", text: "What is the opportunity in it?" }
   ],
-  qualPreClose: [
-    { id: "q3", type: "scale", text: "On a scale of 0 to 10, how much does your organisation currently give you permission to sit with uncertainty rather than forcing a premature decision?" },
-    { id: "q4", type: "text", text: "What is the greatest barrier that holds you back from having that permission?" }
-  ],
 
-  /* Qualitative, post-session (2). */
+  /* Qualitative, post-session: one question. */
   qualPost: [
-    { id: "q1", type: "text", text: "What, if anything, shifted in how you will approach the decisions you are carrying?" },
-    { id: "q2", type: "text", text: "What one commitment will you make in the next seven days to practise holding the open?" }
+    { id: "q1", type: "text", text: "What, if anything, has shifted in how you'll approach the decisions you're carrying?" }
   ],
 
   /* In-session reflection blocks. One per lens, anchored past then present then future.
@@ -256,10 +248,10 @@ function buildBatteryPayload(phase){
     utos               // HTO composite, stored under utos so session_aggregates is unchanged
   };
   if (phase === "pre"){
-    payload.qual_pre = { q1: q.q1||"", q2: q.q2||"", q3: (typeof q.q3==="number"?q.q3:null), q4: q.q4||"" };
+    payload.qual_pre = { q1: q.q1||"", q2: q.q2||"" };
   } else {
     payload.ag5 = (typeof ans.AG5==="number") ? ans.AG5 : null; // post-only, raw, not in averages
-    payload.qual_post = { q1: q.q1||"", q2: q.q2||"" };
+    payload.qual_post = { q1: q.q1||"" };
   }
   return payload;
 }
@@ -273,7 +265,6 @@ function render(){
     welcome: viewWelcome,
     pre_intro: viewPreIntro,
     pre_battery: () => viewBattery("pre"),
-    pre_qual: () => viewQual("pre"),
     holding1: viewHolding1,
     during: viewDuring,
     during_hold: viewDuringHold,
@@ -427,7 +418,7 @@ function viewBattery(phase){
   /* Control C1. */
   box.appendChild(scaleRow(CONTENT.control.text, ans.C1, (n)=>{ ans.C1=n; saveState(); }));
 
-  node.querySelector("#next").addEventListener("click", ()=>{
+  node.querySelector("#next").addEventListener("click", async ()=>{
     const err = node.querySelector("#batErr");
     if (!isPre && !ans.paradox){ err.textContent="Please choose one of the two options."; return; }
     const need = [];
@@ -435,44 +426,42 @@ function viewBattery(phase){
     need.push("C1");
     if (!isPre) need.push("AG5");
     if (need.some(id => typeof ans[id] !== "number")){ err.textContent="Please answer every item."; return; }
-    state.stage = isPre ? "pre_qual" : "post_qual"; render();
+    if (isPre){
+      /* No qualitative screen after the pre battery now: build and insert the pre response here. */
+      const btn = node.querySelector("#next"); btn.disabled=true; btn.textContent="Saving.";
+      const payload = buildBatteryPayload("pre");
+      await insertRow("response", { token: state.token, session_code: SESSION, phase: "pre", payload });
+      state.stage = "holding1"; render();
+    } else {
+      state.stage = "post_qual"; render();
+    }
   });
   return node;
 }
 
-/* ---------------- Qualitative (pre 4, post 2) ---------------- */
-function viewQual(phase){
-  const isPre = phase === "pre";
-  const list = isPre ? CONTENT.qualPreClose : CONTENT.qualPost;  // pre opener (q1,q2) is on the intro screen
-  const store = isPre ? state.qpreAns : state.qpostAns;
+/* ---------------- Qualitative, post-session (one question) ---------------- */
+function viewQual(_phase){
+  const store = state.qpostAns;
   const node = el(`<div>
-    <div class="progress">${isPre ? "A few words in your own voice" : "Before you go"}</div>
-    <h2>${isPre ? "Where you are starting from" : "What you are taking away"}</h2>
+    <div class="progress">Before you go</div>
+    <h2>What you are taking away</h2>
     <div class="card" id="qbox"></div>
-    <div class="err" id="qErr"></div>
-    <button class="btn" id="next">${isPre ? "Continue" : "Finish"}</button>
+    <button class="btn" id="next">Finish</button>
   </div>`);
   const box = node.querySelector("#qbox");
-  list.forEach(item => {
-    if (item.type === "scale"){
-      box.appendChild(scaleRow(item.text, store[item.id], (n)=>{ store[item.id]=n; saveState(); }));
-    } else {
-      const q = el(`<div class="q"><div class="qtext">${esc(item.text)}</div></div>`);
-      const ta = el(`<textarea placeholder="Write as much or as little as you like."></textarea>`);
-      ta.value = store[item.id] || "";
-      ta.addEventListener("input", ()=>{ store[item.id]=ta.value; saveState(); });
-      q.appendChild(ta);
-      box.appendChild(q);
-    }
+  CONTENT.qualPost.forEach(item => {
+    const q = el(`<div class="q"><div class="qtext">${esc(item.text)}</div></div>`);
+    const ta = el(`<textarea placeholder="Write as much or as little as you like."></textarea>`);
+    ta.value = store[item.id] || "";
+    ta.addEventListener("input", ()=>{ store[item.id]=ta.value; saveState(); });
+    q.appendChild(ta);
+    box.appendChild(q);
   });
   node.querySelector("#next").addEventListener("click", async ()=>{
-    const err = node.querySelector("#qErr");
-    if (isPre && typeof store.q3 !== "number"){ err.textContent="Please answer the 0 to 10 permission question."; return; }
     const btn = node.querySelector("#next"); btn.disabled=true; btn.textContent="Saving.";
-    const payload = buildBatteryPayload(phase);
-    await insertRow("response", { token: state.token, session_code: SESSION, phase, payload });
-    state.stage = isPre ? "holding1" : "post_hold";
-    render();
+    const payload = buildBatteryPayload("post");
+    await insertRow("response", { token: state.token, session_code: SESSION, phase: "post", payload });
+    state.stage = "post_hold"; render();
   });
   return node;
 }
