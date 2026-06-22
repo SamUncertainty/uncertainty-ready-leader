@@ -113,18 +113,18 @@ const CONTENT = {
 
   /* Exact item wording, keyed by stable ID. */
   items: {
-    H1: "Right now, I am thinking about this challenge in terms of what truly matters, not just what is immediately urgent.",
-    H2: "Right now, I can see the longer-term human stakes of the decisions I am carrying, not only the near-term pressure.",
-    H3: "Right now, I am able to hold a meaningful time horizon in mind, one where the decision will land, not just when it is due.",
-    H4: "Right now, I can distinguish between what feels urgent and what is actually important.",
-    A1: "Right now, I can step back and see the wider terrain around the decisions I am carrying.",
-    A2: "Right now, I am clear on whose perspective I am still missing.",
-    A3: "Right now, I could articulate the strongest version of a view that challenges my own.",
-    A4: "Right now, I am not so close to this decision that I have lost sight of the people it affects.",
-    AG1: "Right now, I am confident I can work my way to a good decision under uncertainty.",
-    AG2: "Right now, I can see my own part in what I am facing, not just the external blockers.",
-    AG3: "Right now, my emotional reaction to uncertainty feels like information I can use, not a verdict on my capability.",
-    AG4: "Right now, I trust my own process for moving through ambiguity."
+    H1: "I am thinking about this challenge in terms of what truly matters, not just what is immediately urgent.",
+    H2: "I can see the longer-term human stakes of the decisions I am carrying, not only the near-term pressure.",
+    H3: "I am able to hold a meaningful time horizon in mind, one where the decision will land, not just when it is due.",
+    H4: "I can distinguish between what feels urgent and what is actually important.",
+    A1: "I can step back and see the wider terrain around the decisions I am carrying.",
+    A2: "I am clear on whose perspective I am still missing.",
+    A3: "I could articulate the strongest version of a view that challenges my own.",
+    A4: "I am not so close to this decision that I have lost sight of the people it affects.",
+    AG1: "I am confident I can work my way to a good decision under uncertainty.",
+    AG2: "I can see my own part in what I am facing, not just the external blockers.",
+    AG3: "My emotional reaction to uncertainty feels like information I can use, not a verdict on my capability.",
+    AG4: "I trust my own process for moving through ambiguity."
   },
 
   /* Post-only confidence item, stored raw under top-level ag5, NOT in any average. */
@@ -133,10 +133,14 @@ const CONTENT = {
   /* Control (trait). C1 is the single control for now; it feeds the top-level control key. */
   control: { id: "C1", text: "My core beliefs about how to lead have stayed broadly consistent over the past few years." },
 
-  /* Qualitative, pre-session (4). q3 is a 0 to 10 rated item. */
-  qualPre: [
+  /* Qualitative, pre-session (4). Stored keys q1..q4 unchanged. Split across two
+     screens: the opener (q1, q2) frames the challenge BEFORE the scored items;
+     the close (q3, q4) follows the scored items. q3 is a 0 to 10 rated item. */
+  qualPreOpen: [
     { id: "q1", type: "text", text: "What is the biggest uncertainty you currently face?" },
-    { id: "q2", type: "text", text: "What is the opportunity in it?" },
+    { id: "q2", type: "text", text: "What is the opportunity in it?" }
+  ],
+  qualPreClose: [
     { id: "q3", type: "scale", text: "On a scale of 0 to 10, how much does your organisation currently give you permission to sit with uncertainty rather than forcing a premature decision?" },
     { id: "q4", type: "text", text: "What is the greatest barrier that holds you back from having that permission?" }
   ],
@@ -267,6 +271,7 @@ function render(){
   app.innerHTML = "";
   const view = ({
     welcome: viewWelcome,
+    pre_intro: viewPreIntro,
     pre_battery: () => viewBattery("pre"),
     pre_qual: () => viewQual("pre"),
     holding1: viewHolding1,
@@ -330,6 +335,53 @@ function viewWelcome(){
        to be handed to the server-side email function at send time if the participant
        opts in at the end. The participant row is anonymous: token + session + first name. */
     await insertRow("participant", { token: state.token, session_code: SESSION, first_name: fn });
+    state.stage = "pre_intro"; render();
+  });
+  return node;
+}
+
+/* ---------------- Pre intro: name the challenge, then the paradox ---------------- */
+/* The scored items refer to "this challenge" and "the decisions I am carrying",
+   so the participant frames a challenge here first. Opener q1/q2 (stored keys
+   unchanged) then the Decisiveness Paradox, before any scored item. */
+function viewPreIntro(){
+  const ans = state.preAns;
+  const q = state.qpreAns;
+  const node = el(`<div>
+    <div class="progress">Before we begin</div>
+    <h2>The challenge you are bringing</h2>
+    <p class="muted small">Name what is on your mind first. The questions that follow refer back to it.</p>
+    <div class="card" id="introbox"></div>
+    <div class="err" id="introErr"></div>
+    <button class="btn" id="next">Continue</button>
+  </div>`);
+  const box = node.querySelector("#introbox");
+
+  /* Opener: q1, q2 (open text). */
+  CONTENT.qualPreOpen.forEach(item => {
+    const qd = el(`<div class="q"><div class="qtext">${esc(item.text)}</div></div>`);
+    const ta = el(`<textarea placeholder="Write as much or as little as you like."></textarea>`);
+    ta.value = q[item.id] || "";
+    ta.addEventListener("input", ()=>{ q[item.id]=ta.value; saveState(); });
+    qd.appendChild(ta);
+    box.appendChild(qd);
+  });
+
+  /* Decisiveness Paradox (stored A/B per locked mapping). */
+  const par = el(`<div class="q"><div class="qtext">${esc(CONTENT.paradox.prompt)}</div></div>`);
+  [["A",CONTENT.paradox.optionA],["B",CONTENT.paradox.optionB]].forEach(([k,txt])=>{
+    const c = el(`<button type="button" class="choice" data-k="${k}" aria-pressed="${ans.paradox===k}">${esc(txt)}</button>`);
+    c.addEventListener("click", ()=>{
+      par.querySelectorAll(".choice").forEach(cc => cc.setAttribute("aria-pressed", String(cc.getAttribute("data-k")===k)));
+      ans.paradox=k; saveState(); /* no render: keep scroll position */
+    });
+    par.appendChild(c);
+  });
+  box.appendChild(par);
+
+  node.querySelector("#next").addEventListener("click", ()=>{
+    const err = node.querySelector("#introErr");
+    if (!ans.paradox){ err.textContent="Please choose one of the two options."; return; }
     state.stage = "pre_battery"; render();
   });
   return node;
@@ -349,17 +401,20 @@ function viewBattery(phase){
   </div>`);
   const box = node.querySelector("#battery");
 
-  /* Paradox first (the spine). Stored A/B per locked mapping. */
-  const par = el(`<div class="q"><div class="qtext">${esc(CONTENT.paradox.prompt)}</div></div>`);
-  [["A",CONTENT.paradox.optionA],["B",CONTENT.paradox.optionB]].forEach(([k,txt])=>{
-    const c = el(`<button type="button" class="choice" data-k="${k}" aria-pressed="${ans.paradox===k}">${esc(txt)}</button>`);
-    c.addEventListener("click", ()=>{
-      par.querySelectorAll(".choice").forEach(cc => cc.setAttribute("aria-pressed", String(cc.getAttribute("data-k")===k)));
-      ans.paradox=k; saveState(); /* no render: keep scroll position */
+  /* Paradox (the spine, stored A/B per locked mapping). On the PRE it is asked
+     earlier, on the challenge-framing intro screen; on the POST it stays here. */
+  if (!isPre){
+    const par = el(`<div class="q"><div class="qtext">${esc(CONTENT.paradox.prompt)}</div></div>`);
+    [["A",CONTENT.paradox.optionA],["B",CONTENT.paradox.optionB]].forEach(([k,txt])=>{
+      const c = el(`<button type="button" class="choice" data-k="${k}" aria-pressed="${ans.paradox===k}">${esc(txt)}</button>`);
+      c.addEventListener("click", ()=>{
+        par.querySelectorAll(".choice").forEach(cc => cc.setAttribute("aria-pressed", String(cc.getAttribute("data-k")===k)));
+        ans.paradox=k; saveState(); /* no render: keep scroll position */
+      });
+      par.appendChild(c);
     });
-    par.appendChild(c);
-  });
-  box.appendChild(par);
+    box.appendChild(par);
+  }
 
   /* Lens items in locked order: H1-H4, A1-A4, AG1-AG4. */
   CONTENT.lenses.forEach(L => L.ids.forEach(id => {
@@ -374,7 +429,7 @@ function viewBattery(phase){
 
   node.querySelector("#next").addEventListener("click", ()=>{
     const err = node.querySelector("#batErr");
-    if (!ans.paradox){ err.textContent="Please choose one of the two options."; return; }
+    if (!isPre && !ans.paradox){ err.textContent="Please choose one of the two options."; return; }
     const need = [];
     CONTENT.lenses.forEach(L => L.ids.forEach(id => need.push(id)));
     need.push("C1");
@@ -388,7 +443,7 @@ function viewBattery(phase){
 /* ---------------- Qualitative (pre 4, post 2) ---------------- */
 function viewQual(phase){
   const isPre = phase === "pre";
-  const list = isPre ? CONTENT.qualPre : CONTENT.qualPost;
+  const list = isPre ? CONTENT.qualPreClose : CONTENT.qualPost;  // pre opener (q1,q2) is on the intro screen
   const store = isPre ? state.qpreAns : state.qpostAns;
   const node = el(`<div>
     <div class="progress">${isPre ? "A few words in your own voice" : "Before you go"}</div>
