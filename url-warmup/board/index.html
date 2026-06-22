@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>URL warm-up — leaderboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0a; --panel:#141414; --line:rgba(255,255,255,.07);
+    --ink:#f4f4f4; --muted:#9a9a9a; --mag:#ec008c; --mag-d:#b00069;
+    --ok:#37d67a; --warn:#ffb020;
+    --head:'Bebas Neue','Arial Narrow',Arial,sans-serif;
+    --body:Arial,Helvetica,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased}
+  body{
+    background-image:
+      linear-gradient(var(--line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:28px 28px;min-height:100vh;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:22px 18px 60px}
+  .brandbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .logo{font-family:var(--head);letter-spacing:.04em;font-size:22px}
+  .logo b{color:var(--mag)}
+  .live{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);animation:pulse 1.6s infinite}
+  .dot.stale{background:var(--warn);box-shadow:0 0 8px var(--warn);animation:none}
+  @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+  h1{font-family:var(--head);font-weight:400;letter-spacing:.02em;font-size:54px;line-height:.95;margin:.1em 0 .15em}
+  h1 .sess{color:var(--muted);font-size:24px;display:block;letter-spacing:.05em}
+
+  .tabs{display:flex;gap:8px;margin:14px 0 6px}
+  .tab{flex:1;background:#161616;border:1px solid var(--line);border-radius:10px;color:var(--ink);
+       font-family:var(--head);letter-spacing:.04em;font-size:22px;padding:10px;text-align:center;cursor:pointer}
+  .tab[aria-pressed=true]{background:var(--mag);color:#fff;border-color:var(--mag)}
+  .tab .n{display:block;font-family:var(--body);font-size:11px;letter-spacing:.06em;color:rgba(255,255,255,.65);text-transform:uppercase}
+  .tab[aria-pressed=false] .n{color:var(--muted)}
+
+  .summary{display:flex;gap:10px;margin:10px 0 4px}
+  .summary .stat{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center}
+  .stat-l{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .stat-v{font-family:var(--head);letter-spacing:.03em;font-size:46px;line-height:1.0}
+  .stat-v.mag{color:var(--mag)}
+
+  .compare{margin:8px 0 0;font-size:13px;color:var(--muted);text-align:center}
+  .compare b{color:var(--ink);font-family:var(--head);font-size:18px;letter-spacing:.03em}
+
+  table{width:100%;border-collapse:collapse;margin-top:14px}
+  th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:normal;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  td.rank{font-family:var(--head);font-size:26px;color:var(--muted);width:48px}
+  td.name{font-size:19px}
+  td.score{font-family:var(--head);font-size:30px;text-align:right;letter-spacing:.03em}
+  tr.top1 td.rank,tr.top1 td.score{color:var(--mag)}
+  tr.top2 td.rank,tr.top3 td.rank{color:var(--ink)}
+  tr.new{animation:flash 1.2s ease}
+  @keyframes flash{from{background:rgba(236,0,140,.18)}to{background:transparent}}
+
+  .empty{text-align:center;color:var(--muted);padding:46px 10px;font-size:16px}
+  .foot{margin-top:26px;font-size:11px;color:#666;line-height:1.5;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brandbar">
+    <div class="logo">UNCERTAINTY <b>EXPERTS</b></div>
+    <div class="live"><span class="dot" id="dot"></span><span id="liveTxt">Live</span></div>
+  </div>
+
+  <h1>THE ROOM<span class="sess" id="sessLabel"></span></h1>
+
+  <div class="tabs">
+    <button class="tab" id="tab-warmup"  onclick="setRound('warmup')">Warm-up<span class="n" id="n-warmup">0 players</span></button>
+    <button class="tab" id="tab-closing" onclick="setRound('closing')">Closing<span class="n" id="n-closing">0 players</span></button>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><div class="stat-l">Players</div><div class="stat-v" id="sPlayers">0</div></div>
+    <div class="stat"><div class="stat-l">Room average</div><div class="stat-v mag" id="sAvg">—</div></div>
+  </div>
+  <div class="compare" id="compare"></div>
+
+  <table id="boardTable" style="display:none">
+    <thead><tr><th>#</th><th>Name</th><th style="text-align:right">Score</th></tr></thead>
+    <tbody id="boardBody"></tbody>
+  </table>
+  <div class="empty" id="empty">Waiting for the first scores to land…</div>
+
+  <p class="foot">Ranked by decision-quality (the right call, sampling near the optimum, resisting the cheap headline) — never speed. First names show only during the session and are wiped afterwards. Round-over-round is directional, not a paired measure.</p>
+</div>
+
+<script>
+const SB_URL = "https://aevfmmgqfngygnfxcvec.supabase.co";
+const SB_KEY = "sb_publishable_mHR6CteMYx7ZlnyIoZorvg_rDliOubk";
+const DEFAULT_SESSION = "forward-2026-06-25";
+const POLL_MS = 4000;
+
+const params  = new URLSearchParams(location.search);
+const SESSION = params.get("s") || DEFAULT_SESSION;
+let viewRound = (params.get("round")||"").toLowerCase();
+if(viewRound!=="warmup" && viewRound!=="closing") viewRound=null; // auto-pick once data arrives
+
+document.getElementById("sessLabel").textContent = SESSION;
+document.title = "URL warm-up — " + SESSION;
+
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+let board = {};          // last good payload { warmup:{n,avg_score,top[]}, closing:{...} }
+let seen = new Set();     // names already on screen, to flash new arrivals
+let userPicked = false;   // becomes true once a facilitator taps a tab
+
+function setRound(r){ viewRound=r; userPicked=true; render(); }
+
+function pickDefaultRound(){
+  if(userPicked && viewRound) return viewRound;
+  if(viewRound) return viewRound;                 // honoured from ?round=
+  if(board.closing && board.closing.n) return "closing";
+  return "warmup";
+}
+
+async function poll(){
+  try{
+    const res = await fetch(SB_URL+"/rest/v1/rpc/call_board",{
+      method:"POST",
+      headers:{ "apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY, "Content-Type":"application/json" },
+      body: JSON.stringify({ p_session: SESSION })
+    });
+    if(!res.ok) throw new Error(res.status);
+    board = (await res.json()) || {};
+    setLive(true);
+    render();
+  }catch(e){
+    setLive(false);
+  }finally{
+    setTimeout(poll, POLL_MS);
+  }
+}
+
+function setLive(ok){
+  document.getElementById("dot").className = ok ? "dot" : "dot stale";
+  document.getElementById("liveTxt").textContent = ok ? "Live" : "Reconnecting…";
+}
+
+function render(){
+  const r = pickDefaultRound();
+  const wN = board.warmup ? board.warmup.n : 0;
+  const cN = board.closing ? board.closing.n : 0;
+  document.getElementById("n-warmup").textContent  = wN + (wN===1?" player":" players");
+  document.getElementById("n-closing").textContent = cN + (cN===1?" player":" players");
+  document.getElementById("tab-warmup").setAttribute("aria-pressed", r==="warmup");
+  document.getElementById("tab-closing").setAttribute("aria-pressed", r==="closing");
+
+  const data = board[r] || {n:0, avg_score:null, top:[]};
+  document.getElementById("sPlayers").textContent = data.n || 0;
+  document.getElementById("sAvg").textContent = (data.avg_score==null) ? "—" : data.avg_score;
+
+  // Both-round comparison strip
+  const cmp = document.getElementById("compare");
+  if(wN && cN){
+    cmp.innerHTML = "Warm-up avg <b>"+board.warmup.avg_score+"</b>  →  Closing avg <b>"+board.closing.avg_score+"</b>"
+      + "  <span style='color:#666'>(directional)</span>";
+  } else { cmp.innerHTML = ""; }
+
+  // Ranked rows
+  const body = document.getElementById("boardBody");
+  const table = document.getElementById("boardTable");
+  const empty = document.getElementById("empty");
+  const rows = (data.top||[]);
+  if(!rows.length){
+    table.style.display="none";
+    empty.style.display="block";
+    empty.textContent = data.n ? "Scores landing…" : "Waiting for the first "+r+" scores to land…";
+    return;
+  }
+  empty.style.display="none";
+  table.style.display="table";
+
+  let html="";
+  rows.forEach((row,i)=>{
+    const nm = (row.first_name==null || row.first_name==="") ? "—" : esc(row.first_name);
+    const key = r+"|"+i+"|"+nm+"|"+row.score;
+    const isNew = !seen.has(key);
+    const cls = (i===0?"top1":i===1?"top2":i===2?"top3":"") + (isNew?" new":"");
+    html += "<tr class='"+cls.trim()+"'><td class='rank'>"+(i+1)+"</td>"
+          + "<td class='name'>"+nm+"</td>"
+          + "<td class='score'>"+(row.score==null?"—":row.score)+"</td></tr>";
+  });
+  body.innerHTML = html;
+  // refresh seen set to current snapshot
+  seen = new Set(rows.map((row,i)=> r+"|"+i+"|"+((row.first_name==null||row.first_name==="")?"—":esc(row.first_name))+"|"+row.score));
+}
+
+poll();
+</script>
+</body>
+</html>
