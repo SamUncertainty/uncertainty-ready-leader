@@ -510,8 +510,25 @@ function viewDuring(){
   return node;
 }
 
+/* Best-effort reflections email. Fire and forget: the email address lives only
+   in the browser and is passed to the server-side function for the send. It is
+   never stored beside answers. A failure here must never block the close screen. */
+function sendReflections(){
+  if (state.emailRequested) return;          // send at most once per device
+  if (!state.email) return;
+  state.emailRequested = true; saveState();
+  try {
+    fetch(SB_URL + "/functions/v1/send-reflections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY },
+      body: JSON.stringify({ token: state.token, email: state.email, first_name: state.first_name })
+    }).catch(()=>{});
+  } catch(e) { /* never block completion */ }
+}
+
 /* ---------------- Close ---------------- */
 function viewClose(){
+  sendReflections();
   return el(`<div class="center">
     <div class="brand">Thank you, ${esc(state.first_name||"")}</div>
     <h2>That is everything.</h2>
