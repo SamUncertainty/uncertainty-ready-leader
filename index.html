@@ -37,9 +37,11 @@
   .q{padding:16px 0;border-bottom:1px solid var(--line)}
   .q:last-child{border-bottom:0}
   .q .qtext{font-size:16px;font-weight:550;margin-bottom:12px}
-  .scale{display:flex;gap:4px;flex-wrap:wrap}
-  .scale button{flex:1 1 auto;min-width:30px;background:#0b0f14;border:1px solid var(--line);color:var(--ink);
-    border-radius:9px;padding:10px 0;font-size:14px;font-weight:600;cursor:pointer}
+  /* 11-column grid: all of 0..10 always fit one row and shrink uniformly,
+     so 9 and 10 never wrap or render oversized on a narrow phone in portrait. */
+  .scale{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px}
+  .scale button{min-width:0;width:100%;background:#0b0f14;border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:12px 0;font-size:14px;font-weight:600;cursor:pointer}
   .scale button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
   .scale-ends{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-top:7px}
   .choice{display:block;width:100%;text-align:left;background:#0b0f14;border:1px solid var(--line);
@@ -269,9 +271,11 @@ function render(){
     pre_qual: () => viewQual("pre"),
     holding1: viewHolding1,
     during: viewDuring,
+    during_hold: viewDuringHold,
     holding2: viewHolding2,
     post_battery: () => viewBattery("post"),
     post_qual: () => viewQual("post"),
+    post_hold: viewPostHold,
     close: viewClose
   })[state.stage] || viewWelcome;
   app.appendChild(view());
@@ -412,7 +416,7 @@ function viewQual(phase){
     const btn = node.querySelector("#next"); btn.disabled=true; btn.textContent="Saving.";
     const payload = buildBatteryPayload(phase);
     await insertRow("response", { token: state.token, session_code: SESSION, phase, payload });
-    state.stage = isPre ? "holding1" : "close";
+    state.stage = isPre ? "holding1" : "post_hold";
     render();
   });
   return node;
@@ -441,6 +445,32 @@ function viewHolding2(){
   node.querySelector("#go").addEventListener("click", ()=>{ state.stage="post_battery"; render(); });
   return node;
 }
+/* Pause between reflection blocks. The next block is revealed only on the
+   facilitator's cue, so the room moves together through the teaching in between. */
+function viewDuringHold(){
+  const next = CONTENT.reflections[(state.dblock||0) + 1];
+  const node = el(`<div class="center">
+    <div class="brand">Hold here</div>
+    <h2>Stay with it for a moment.</h2>
+    <p class="muted">That reflection is saved. ${next ? "Next we will turn to " + esc(next.label.toLowerCase()) + ". " : ""}Wait for the room before you carry on.</p>
+    <p style="margin-top:22px"><span class="dot"></span></p>
+    <button class="btn secondary" id="go">Continue when prompted</button>
+  </div>`);
+  node.querySelector("#go").addEventListener("click", ()=>{ state.dblock = (state.dblock||0) + 1; state.stage="during"; render(); });
+  return node;
+}
+/* Pause after the post check-in, before the closing screen. */
+function viewPostHold(){
+  const node = el(`<div class="center">
+    <div class="brand">Thank you</div>
+    <h2>Hold here for a moment.</h2>
+    <p class="muted">Your final check-in is saved. Wait for the room before you finish.</p>
+    <p style="margin-top:22px"><span class="dot"></span></p>
+    <button class="btn" id="go">Continue when prompted</button>
+  </div>`);
+  node.querySelector("#go").addEventListener("click", ()=>{ state.stage="close"; render(); });
+  return node;
+}
 
 /* ---------------- During: three reflection blocks, revealed in step ---------------- */
 function viewDuring(){
@@ -451,7 +481,7 @@ function viewDuring(){
     <span class="lens-tag">${esc(block.label)}</span>
     <h2>${esc(block.anchor)}</h2>
     <div class="card" id="rbox"></div>
-    <button class="btn" id="next">${i < CONTENT.reflections.length-1 ? "Next reflection" : "Done"}</button>
+    <button class="btn" id="next">${i < CONTENT.reflections.length-1 ? "Done with this reflection" : "Done"}</button>
   </div>`);
   const box = node.querySelector("#rbox");
   block.questions.forEach(qq => {
@@ -464,7 +494,9 @@ function viewDuring(){
     box.appendChild(q);
   });
   node.querySelector("#next").addEventListener("click", async ()=>{
-    if (i < CONTENT.reflections.length-1){ state.dblock = i+1; saveState(); render(); return; }
+    /* Pause between blocks: there is teaching and reflection in the room between
+       lenses, so wait for the facilitator's cue rather than running straight on. */
+    if (i < CONTENT.reflections.length-1){ state.stage = "during_hold"; saveState(); render(); return; }
     const btn = node.querySelector("#next"); btn.disabled=true; btn.textContent="Saving.";
     /* Assemble reflections grouped by lens, exactly per the locked during payload. */
     const reflections = {};
