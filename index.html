@@ -25,9 +25,10 @@
   .small{font-size:14px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin:14px 0}
   label.field{display:block;margin:14px 0 6px;font-weight:600;font-size:15px}
-  input[type=text],input[type=email],textarea{
+  input[type=text],input[type=email],input[type=date],textarea{
     width:100%;background:#0b0f14;border:1px solid var(--line);border-radius:10px;
     color:var(--ink);padding:13px 14px;font-size:16px;font-family:inherit}
+  input[type=date]{min-height:48px}
   textarea{min-height:96px;resize:vertical}
   input:focus,textarea:focus{outline:none;border-color:var(--accent)}
   .btn{appearance:none;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);
@@ -143,25 +144,8 @@ const CONTENT = {
     { id: "q1", type: "text", text: "What, if anything, has shifted in how you'll approach the decisions you're carrying?" }
   ],
 
-  /* In-session reflection blocks. One per lens, anchored past then present then future.
-     The anonymity reminder in r2_1 is MANDATORY and is part of the locked wording. */
-  reflections: [
-    { key: "horizon", label: "Horizon", anchor: "A past uncertainty", questions: [
-      { id: "r1_1", text: "Describe a past uncertainty you faced." },
-      { id: "r1_2", text: "What is the strategic, boundaried period that would have given you genuine room to explore, and still had a hard endpoint at which the decision would have been made regardless?" }
-    ]},
-    { key: "altitude", label: "Altitude", anchor: "A present uncertainty", questions: [
-      { id: "r2_1", text: "Describe a current uncertainty you are carrying. You do not need to name names, just enough detail for you to hold it clearly in mind. All responses are anonymous.", anonymity: true },
-      { id: "r2_2", text: "What is the strategic, boundaried period that gives you genuine room to explore, and still has a hard endpoint at which the decision gets made regardless?" },
-      { id: "r2_3", text: "Name three diverse sources of perspective you could actually reach in that window that would genuinely counter your view." }
-    ]},
-    { key: "agency", label: "Agency", anchor: "A future uncertainty", questions: [
-      { id: "r3_1", text: "Describe an uncertainty you know is coming." },
-      { id: "r3_2", text: "What is the strategic, boundaried period that gives you genuine room to explore, and still has a hard endpoint at which the decision gets made regardless?" },
-      { id: "r3_3", text: "Name three diverse sources of perspective you could actually reach in that window that would genuinely counter your view." },
-      { id: "r3_4", text: "If you hold this open with full discipline, who do you become while you are holding it?" }
-    ]}
-  ],
+  /* The during phase (facilitated reflection) is built screen-by-screen below,
+     not from a config block. Its data model lives in duringPayload(). */
 
   privacy: "Your answers are anonymous. We use your email only to send you your own reflections afterwards. Data is held securely in our own UK database."
 };
@@ -265,10 +249,16 @@ function render(){
     welcome: viewWelcome,
     pre_intro: viewPreIntro,
     pre_battery: () => viewBattery("pre"),
-    holding1: viewHolding1,
-    during: viewDuring,
-    during_hold: viewDuringHold,
-    holding2: viewHolding2,
+    hold_a: viewHoldA,
+    s1: viewS1,
+    hold_b: viewHoldB,
+    s2: viewS2,
+    s3: viewS3,
+    hold_c: viewHoldC,
+    s4: viewS4,
+    s5: viewS5,
+    s6: viewS6,
+    hold_d: viewHoldD,
     post_battery: () => viewBattery("post"),
     post_qual: () => viewQual("post"),
     post_hold: viewPostHold,
@@ -431,7 +421,7 @@ function viewBattery(phase){
       const btn = node.querySelector("#next"); btn.disabled=true; btn.textContent="Saving.";
       const payload = buildBatteryPayload("pre");
       await insertRow("response", { token: state.token, session_code: SESSION, phase: "pre", payload });
-      state.stage = "holding1"; render();
+      state.stage = "hold_a"; render();
     } else {
       state.stage = "post_qual"; render();
     }
@@ -466,43 +456,63 @@ function viewQual(_phase){
   return node;
 }
 
-/* ---------------- Holding screens (facilitator-paced) ---------------- */
-function viewHolding1(){
+/* ===================== DURING: facilitated reflection (one question per screen) =====================
+   Holds are social gates: a calm waiting screen the participant leaves only when the
+   facilitator cues the room to tap Continue. During model (token-paired, anonymous):
+   reflections{ horizon_past, live_decide_by, live_window, live_perspectives[3],
+   future_dilemma, future_decide_by, future_perspective{person,brings}, future_who_you_become }. */
+function ensureDuring(){
+  const d = state.during = state.during || {};
+  if (!Array.isArray(d.live_perspectives)) d.live_perspectives = [{person:"",brings:""},{person:"",brings:""},{person:"",brings:""}];
+  if (!d.future_perspective || typeof d.future_perspective !== "object") d.future_perspective = {person:"",brings:""};
+  return d;
+}
+function duringPayload(){
+  const d = ensureDuring();
+  return { reflections: {
+    horizon_past: d.horizon_past || "",
+    live_decide_by: d.live_decide_by || "",
+    live_window: d.live_window || "",
+    live_perspectives: d.live_perspectives.map(p=>({ person: p.person||"", brings: p.brings||"" })),
+    future_dilemma: d.future_dilemma || "",
+    future_decide_by: d.future_decide_by || "",
+    future_perspective: { person: d.future_perspective.person||"", brings: d.future_perspective.brings||"" },
+    future_who_you_become: d.future_who_you_become || ""
+  }};
+}
+/* Save on each Continue: instant local save, plus a server insert so partial reflections
+   survive a dropped phone. The during row is rewritten each time; dedup keeps the latest
+   (most complete) per phase. awaitIt=true on the final screen guarantees the complete row
+   lands before the post survey. */
+function saveDuring(awaitIt){
+  saveState();
+  const p = insertRow("response", { token: state.token, session_code: SESSION, phase: "during", payload: duringPayload() });
+  return awaitIt ? p : Promise.resolve();
+}
+function bindInput(node, sel, getv, setv){ const e=node.querySelector(sel); e.value=getv()||""; e.addEventListener("input",()=>{ setv(e.value); saveState(); }); }
+function liveAnchor(){
+  const q1 = ((state.qpreAns && state.qpreAns.q1) || "").trim();
+  return q1
+    ? `Earlier you named your biggest uncertainty as: "${esc(q1)}". Hold that decision in mind.`
+    : "Hold your live decision in mind, the biggest uncertainty you are carrying.";
+}
+
+/* Social-gate holds. The participant taps Continue only on the facilitator's verbal cue. */
+function holdScreen(brand, heading, body, nextStage, primary){
   const node = el(`<div class="center">
-    <div class="brand">Thank you</div>
-    <h2>Sit back for a moment.</h2>
-    <p class="muted">Your baseline is saved. The session begins now. We will return to your phone three times, once for each lens. Wait for the room.</p>
+    <div class="brand">${esc(brand)}</div>
+    <h2>${esc(heading)}</h2>
+    <p class="muted">${esc(body)}</p>
     <p style="margin-top:22px"><span class="dot"></span></p>
-    <button class="btn secondary" id="go">Continue when prompted</button>
+    <button class="btn ${primary ? "" : "secondary"}" id="go">Continue when prompted</button>
   </div>`);
-  node.querySelector("#go").addEventListener("click", ()=>{ state.dblock=0; state.stage="during"; render(); });
+  node.querySelector("#go").addEventListener("click", ()=>{ state.stage = nextStage; render(); });
   return node;
 }
-function viewHolding2(){
-  const node = el(`<div class="center">
-    <div class="brand">Almost there</div>
-    <h2>One last check-in to come.</h2>
-    <p class="muted">Your reflections are saved. When the room is ready, we will take the same short check-in we did at the start.</p>
-    <p style="margin-top:22px"><span class="dot"></span></p>
-    <button class="btn" id="go">Continue when prompted</button>
-  </div>`);
-  node.querySelector("#go").addEventListener("click", ()=>{ state.stage="post_battery"; render(); });
-  return node;
-}
-/* Pause between reflection blocks. The next block is revealed only on the
-   facilitator's cue, so the room moves together through the teaching in between. */
-function viewDuringHold(){
-  const next = CONTENT.reflections[(state.dblock||0) + 1];
-  const node = el(`<div class="center">
-    <div class="brand">Hold here</div>
-    <h2>Stay with it for a moment.</h2>
-    <p class="muted">That reflection is saved. ${next ? "Next we will turn to " + esc(next.label.toLowerCase()) + ". " : ""}Wait for the room before you carry on.</p>
-    <p style="margin-top:22px"><span class="dot"></span></p>
-    <button class="btn secondary" id="go">Continue when prompted</button>
-  </div>`);
-  node.querySelector("#go").addEventListener("click", ()=>{ state.dblock = (state.dblock||0) + 1; state.stage="during"; render(); });
-  return node;
-}
+function viewHoldA(){ ensureDuring(); return holdScreen("Thank you", "That's the opening measure done.", "We'll move through three short reflections together. Tap Continue when prompted.", "s1", false); }
+function viewHoldB(){ return holdScreen("Hold here", "Stay with that.", "Tap Continue when prompted.", "s2", false); }
+function viewHoldC(){ return holdScreen("Hold here", "Last one together.", "Hold there. Tap Continue when prompted.", "s4", false); }
+function viewHoldD(){ return holdScreen("Almost done", "That's the reflection done.", "One last short measure before we close. Tap Continue when prompted.", "post_battery", true); }
 /* Pause after the post check-in, before the closing screen. */
 function viewPostHold(){
   const node = el(`<div class="center">
@@ -516,40 +526,122 @@ function viewPostHold(){
   return node;
 }
 
-/* ---------------- During: three reflection blocks, revealed in step ---------------- */
-function viewDuring(){
-  const i = state.dblock || 0;
-  const block = CONTENT.reflections[i];
+/* ---------------- During input screens (S1-S6), one question per screen ---------------- */
+function viewS1(){
+  ensureDuring();
   const node = el(`<div>
-    <div class="progress">Reflection ${i+1} of ${CONTENT.reflections.length}</div>
-    <span class="lens-tag">${esc(block.label)}</span>
-    <h2>${esc(block.anchor)}</h2>
-    <div class="card" id="rbox"></div>
-    <button class="btn" id="next">${i < CONTENT.reflections.length-1 ? "Done with this reflection" : "Done"}</button>
+    <div class="progress">Reflection 1 of 3</div>
+    <span class="lens-tag">Horizon</span>
+    <h2>A past decision</h2>
+    <p>Bring to mind a decision you regret, made under pressure. What was the time pressure you were really under, and what would the right horizon have been? Not the deadline you accepted, the one you could have argued for.</p>
+    <div class="card"><textarea id="t" placeholder="Write as much or as little as you like."></textarea></div>
+    <button class="btn" id="next">Continue</button>
   </div>`);
-  const box = node.querySelector("#rbox");
-  block.questions.forEach(qq => {
-    const q = el(`<div class="q"><div class="qtext">${esc(qq.text)}</div></div>`);
-    if (qq.anonymity) q.querySelector(".qtext").appendChild(el(`<div class="anon">Anonymous. No names are stored.</div>`));
-    const ta = el(`<textarea placeholder="Write as much or as little as you like."></textarea>`);
-    ta.value = state.during[qq.id] || "";
-    ta.addEventListener("input", ()=>{ state.during[qq.id]=ta.value; saveState(); });
-    q.appendChild(ta);
-    box.appendChild(q);
+  bindInput(node, "#t", ()=>state.during.horizon_past, v=>state.during.horizon_past=v);
+  node.querySelector("#next").addEventListener("click", ()=>{ saveDuring(false); state.stage="hold_b"; render(); });
+  return node;
+}
+function viewS2(){
+  ensureDuring();
+  const node = el(`<div>
+    <div class="progress">Reflection 2 of 3</div>
+    <span class="lens-tag">Altitude</span>
+    <h2>Your live decision</h2>
+    <p class="muted small">${liveAnchor()}</p>
+    <p>Name the date by which you'll decide, one that still leaves you room to explore until then.</p>
+    <div class="card">
+      <label class="field" for="dd">I'll decide by</label>
+      <input id="dd" type="date" />
+      <label class="field" for="ww">The window that gives me room until then</label>
+      <input id="ww" type="text" placeholder="e.g. the next six weeks" />
+    </div>
+    <button class="btn" id="next">Continue</button>
+  </div>`);
+  bindInput(node, "#dd", ()=>state.during.live_decide_by, v=>state.during.live_decide_by=v);
+  bindInput(node, "#ww", ()=>state.during.live_window, v=>state.during.live_window=v);
+  node.querySelector("#next").addEventListener("click", ()=>{ saveDuring(false); state.stage="s3"; render(); });
+  return node;
+}
+function viewS3(){
+  const d = ensureDuring();
+  const node = el(`<div>
+    <div class="progress">Reflection 2 of 3</div>
+    <span class="lens-tag">Altitude</span>
+    <h2>Who would see this differently?</h2>
+    <p class="muted small">${liveAnchor()}</p>
+    <p>Name up to three people who would bring an angle you don't already have, and for each, one line on what they'd bring.</p>
+    <div class="card" id="rows"></div>
+    <div class="muted small" style="margin-top:8px">Keep these names for yourself, on your card.</div>
+    <div class="err" id="e3"></div>
+    <button class="btn" id="next">Continue</button>
+  </div>`);
+  const rows = node.querySelector("#rows");
+  d.live_perspectives.forEach((p, idx)=>{
+    const wrap = el(`<div class="q"><div class="qtext">${idx===0 ? "Person 1 (required)" : "Person "+(idx+1)+" (optional)"}</div></div>`);
+    const pe = el(`<input type="text" placeholder="Name" />`); pe.value=p.person||""; pe.addEventListener("input",()=>{ p.person=pe.value; saveState(); });
+    const be = el(`<input type="text" placeholder="What they'd bring" style="margin-top:8px" />`); be.value=p.brings||""; be.addEventListener("input",()=>{ p.brings=be.value; saveState(); });
+    wrap.appendChild(pe); wrap.appendChild(be); rows.appendChild(wrap);
   });
+  node.querySelector("#next").addEventListener("click", ()=>{
+    if (!((d.live_perspectives[0].person)||"").trim()){ node.querySelector("#e3").textContent="Please name at least one person."; return; }
+    saveDuring(false); state.stage="hold_c"; render();
+  });
+  return node;
+}
+function viewS4(){
+  ensureDuring();
+  const node = el(`<div>
+    <div class="progress">Reflection 3 of 3</div>
+    <span class="lens-tag">Agency</span>
+    <h2>A dilemma you can see coming</h2>
+    <p>Think of a dilemma a year or two out. Name it, and the date you'd commit to deciding by.</p>
+    <div class="card">
+      <label class="field" for="dil">The dilemma</label>
+      <input id="dil" type="text" placeholder="Name it" />
+      <label class="field" for="fd">I'll decide by</label>
+      <input id="fd" type="date" />
+    </div>
+    <button class="btn" id="next">Continue</button>
+  </div>`);
+  bindInput(node, "#dil", ()=>state.during.future_dilemma, v=>state.during.future_dilemma=v);
+  bindInput(node, "#fd", ()=>state.during.future_decide_by, v=>state.during.future_decide_by=v);
+  node.querySelector("#next").addEventListener("click", ()=>{ saveDuring(false); state.stage="s5"; render(); });
+  return node;
+}
+function viewS5(){
+  const d = ensureDuring();
+  const fp = d.future_perspective;
+  const node = el(`<div>
+    <div class="progress">Reflection 3 of 3</div>
+    <span class="lens-tag">Agency</span>
+    <h2>Who would see it differently?</h2>
+    <p>One person who would see this future dilemma differently from you, and what they'd bring.</p>
+    <div class="card">
+      <input id="fp_p" type="text" placeholder="Name" />
+      <input id="fp_b" type="text" placeholder="What they'd bring" style="margin-top:10px" />
+    </div>
+    <button class="btn" id="next">Continue</button>
+  </div>`);
+  const pe=node.querySelector("#fp_p"); pe.value=fp.person||""; pe.addEventListener("input",()=>{ fp.person=pe.value; saveState(); });
+  const be=node.querySelector("#fp_b"); be.value=fp.brings||""; be.addEventListener("input",()=>{ fp.brings=be.value; saveState(); });
+  node.querySelector("#next").addEventListener("click", ()=>{ saveDuring(false); state.stage="s6"; render(); });
+  return node;
+}
+function viewS6(){
+  ensureDuring();
+  const node = el(`<div>
+    <div class="progress">Reflection 3 of 3</div>
+    <span class="lens-tag">Agency</span>
+    <h2>Who you become</h2>
+    <p>If you hold this open with full discipline, who do you become while you're holding it?</p>
+    <div class="card"><textarea id="t" placeholder="Write as much or as little as you like."></textarea></div>
+    <button class="btn" id="next">Continue</button>
+  </div>`);
+  bindInput(node, "#t", ()=>state.during.future_who_you_become, v=>state.during.future_who_you_become=v);
   node.querySelector("#next").addEventListener("click", async ()=>{
-    /* Pause between blocks: there is teaching and reflection in the room between
-       lenses, so wait for the facilitator's cue rather than running straight on. */
-    if (i < CONTENT.reflections.length-1){ state.stage = "during_hold"; saveState(); render(); return; }
-    const btn = node.querySelector("#next"); btn.disabled=true; btn.textContent="Saving.";
-    /* Assemble reflections grouped by lens, exactly per the locked during payload. */
-    const reflections = {};
-    CONTENT.reflections.forEach(b => {
-      reflections[b.key] = {};
-      b.questions.forEach(qq => reflections[b.key][qq.id] = state.during[qq.id] || "");
-    });
-    await insertRow("response", { token: state.token, session_code: SESSION, phase: "during", payload: { reflections } });
-    state.stage = "holding2"; render();
+    const btn=node.querySelector("#next"); btn.disabled=true; btn.textContent="Saving.";
+    await saveDuring(true);   // ensure the complete during row lands before the post survey
+    state.stage="hold_d"; render();
   });
   return node;
 }
