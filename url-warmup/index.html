@@ -272,6 +272,18 @@ const ROUND = (roundOverride === "warmup" || roundOverride === "closing")
 const ROUND_LABEL = ROUND === "closing" ? "Closing" : "Warm-up";
 document.getElementById("roundPill").textContent = ROUND_LABEL;
 
+/* Stable per-player id, per session and round, so each phone updates its OWN board
+   row live as it plays, instead of inserting a new row each time. */
+const PID_KEY = "urlwarmup:pid:" + SESSION + ":" + ROUND;
+let PLAYER_ID = "";
+try { PLAYER_ID = localStorage.getItem(PID_KEY) || ""; } catch(e){}
+if(!PLAYER_ID){
+  PLAYER_ID = (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : (Date.now().toString(36) + Math.random().toString(36).slice(2));
+  try { localStorage.setItem(PID_KEY, PLAYER_ID); } catch(e){}
+}
+
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 let firstName = "";
@@ -419,6 +431,7 @@ function commit(choice,forced){
     time: CLOCK-timeLeft,
     forced: !!forced
   });
+  postLive();                 // update this player's board row now, so the room sees them move
   round++;
   if(round<ROUNDS)startRound();
   else finishSession();
@@ -450,25 +463,39 @@ function finishSession(){
   postScore(myResult);
 }
 
-/* ---------- post score to the live board ---------- */
+/* ---------- post score to the live board ----------
+   One row per player per round, updated live via the call_play upsert. The function
+   clamps score, name and round server-side, so the board cannot be spoofed or broken. */
+async function callPlay(sum){
+  const body={
+    p_session:  SESSION,
+    p_round:    ROUND,
+    p_player:   PLAYER_ID,
+    p_name:     firstName,
+    p_score:    sum.score,
+    p_ebc:      +sum.ebc.toFixed(4),
+    p_accuracy: +sum.acc.toFixed(4)
+  };
+  const res=await fetch(SB_URL+"/rest/v1/rpc/call_play",{
+    method:"POST",
+    headers:{ "apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY, "Content-Type":"application/json" },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error(res.status+" "+(await res.text()));
+}
+
+/* Fire after every round so the player visibly rises and falls as they play. Silent. */
+function postLive(){
+  if(!results.length) return;
+  callPlay(summarise(results)).catch(e=>console.warn("live post failed", e));
+}
+
+/* Final post, with the on-screen confirmation. Idempotent: it updates the same row. */
 async function postScore(sum){
   const note=document.getElementById('saveNote');
   note.className='savenote';note.textContent='Saving to the board…';
-  const body={
-    session_code: SESSION,
-    round: ROUND,
-    first_name: firstName,
-    score: sum.score,
-    ebc: +sum.ebc.toFixed(4),
-    accuracy: +sum.acc.toFixed(4)
-  };
   try{
-    const res=await fetch(SB_URL+"/rest/v1/call_score",{
-      method:"POST",
-      headers:{ "apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY, "Content-Type":"application/json", "Prefer":"return=minimal" },
-      body: JSON.stringify(body)
-    });
-    if(!res.ok) throw new Error(res.status+" "+(await res.text()));
+    await callPlay(sum);
     note.className='savenote ok';
     note.textContent='You are on the '+ROUND_LABEL.toLowerCase()+' board.';
   }catch(e){
