@@ -146,8 +146,8 @@ const CONTENT = {
   /* Qualitative, pre-session: the opener (q1, q2), shown before the scored items
      to frame the challenge. Stored keys unchanged. */
   qualPreOpen: [
-    { id: "q1", type: "text", text: "What is the biggest uncertainty you currently face?" },
-    { id: "q2", type: "text", text: "What is the opportunity in it?" }
+    { id: "q1", type: "text", text: "What's the main uncertainty facing you today?" },
+    { id: "q2", type: "text", text: "What is an opportunity in it for you?" }
   ],
 
   /* Qualitative, post-session: one question. */
@@ -501,7 +501,7 @@ function viewQual(_phase){
    future_dilemma, future_decide_by, future_perspective{person,brings}, future_who_you_become }. */
 function ensureDuring(){
   const d = state.during = state.during || {};
-  if (!Array.isArray(d.live_perspectives)) d.live_perspectives = [{person:"",brings:""},{person:"",brings:""},{person:"",brings:""}];
+  if (!Array.isArray(d.live_perspectives)) d.live_perspectives = [{person:"",brings:""},{person:"",brings:""}];
   if (!d.future_perspective || typeof d.future_perspective !== "object") d.future_perspective = {person:"",brings:""};
   return d;
 }
@@ -509,10 +509,12 @@ function duringPayload(){
   const d = ensureDuring();
   return { reflections: {
     horizon_past: d.horizon_past || "",
+    past_outcome: d.past_outcome || "",
+    live_decision: d.live_decision || "",
     live_decide_by: d.live_decide_by || "",
-    live_window: d.live_window || "",
     live_perspectives: d.live_perspectives.map(p=>({ person: p.person||"", brings: p.brings||"" })),
     future_dilemma: d.future_dilemma || "",
+    future_decision: d.future_decision || "",
     future_decide_by: d.future_decide_by || "",
     future_perspective: { person: d.future_perspective.person||"", brings: d.future_perspective.brings||"" },
     future_who_you_become: d.future_who_you_become || ""
@@ -531,8 +533,8 @@ function bindInput(node, sel, getv, setv){ const e=node.querySelector(sel); e.va
 function liveAnchor(){
   const q1 = ((state.qpreAns && state.qpreAns.q1) || "").trim();
   return q1
-    ? `Earlier you named your biggest uncertainty as: "${esc(q1)}". Hold that decision in mind.`
-    : "Hold your live decision in mind, the biggest uncertainty you are carrying.";
+    ? `Earlier you named the main uncertainty facing you today as: "${esc(q1)}".`
+    : "Bring to mind the main uncertainty facing you today.";
 }
 
 /* Social-gate holds. The participant taps Continue only on the facilitator's verbal cue. */
@@ -573,11 +575,17 @@ function viewS1(){
     <div class="progress">Reflection 1 of 3</div>
     <span class="lens-tag">Horizon</span>
     <h2>A past decision</h2>
-    <p>Bring to mind a decision you regret, made under pressure. What was the time pressure you were really under, and what would the right horizon have been? Not the deadline you accepted, the one you could have argued for.</p>
-    <div class="card"><textarea id="t" placeholder="Write as much or as little as you like."></textarea></div>
+    <p>Bring to mind a decision you made under pressure, and came to regret.</p>
+    <div class="card">
+      <label class="field" for="t1">Looking back, what could you have done to change the timeline you were under?</label>
+      <textarea id="t1" placeholder="Write as much or as little as you like."></textarea>
+      <label class="field" for="t2">And how would that have changed the outcome?</label>
+      <textarea id="t2" placeholder="Write as much or as little as you like."></textarea>
+    </div>
     <button class="btn" id="next">Continue</button>
   </div>`);
-  bindInput(node, "#t", ()=>state.during.horizon_past, v=>state.during.horizon_past=v);
+  bindInput(node, "#t1", ()=>state.during.horizon_past, v=>state.during.horizon_past=v);
+  bindInput(node, "#t2", ()=>state.during.past_outcome, v=>state.during.past_outcome=v);
   node.querySelector("#next").addEventListener("click", ()=>{ saveDuring(false); state.stage="hold_b"; render(); });
   return node;
 }
@@ -588,17 +596,17 @@ function viewS2(){
     <span class="lens-tag">Horizon + Altitude</span>
     <h2>Your live decision</h2>
     <p class="muted small">${liveAnchor()}</p>
-    <p>Name the date by which you'll decide, one that still leaves you room to explore until then.</p>
+    <p>What decision could you make to start to answer or alleviate it? It doesn't have to fix the whole thing.</p>
     <div class="card">
-      <label class="field" for="dd">I'll decide by</label>
+      <label class="field" for="ld">The decision</label>
+      <textarea id="ld" placeholder="Write as much or as little as you like."></textarea>
+      <label class="field" for="dd">By when will you make that decision?</label>
       <input id="dd" type="date" />
-      <label class="field" for="ww">The window that gives me room until then</label>
-      <input id="ww" type="text" placeholder="e.g. the next six weeks" />
     </div>
     <button class="btn" id="next">Continue</button>
   </div>`);
+  bindInput(node, "#ld", ()=>state.during.live_decision, v=>state.during.live_decision=v);
   bindInput(node, "#dd", ()=>state.during.live_decide_by, v=>state.during.live_decide_by=v);
-  bindInput(node, "#ww", ()=>state.during.live_window, v=>state.during.live_window=v);
   node.querySelector("#next").addEventListener("click", ()=>{ saveDuring(false); state.stage="s3"; render(); });
   return node;
 }
@@ -607,9 +615,9 @@ function viewS3(){
   const node = el(`<div>
     <div class="progress">Reflection 2 of 3</div>
     <span class="lens-tag">Horizon + Altitude</span>
-    <h2>Who would see this differently?</h2>
+    <h2>Who would help you see this differently?</h2>
     <p class="muted small">${liveAnchor()}</p>
-    <p>Name up to three people who would bring an angle you don't already have, and for each, one line on what they'd bring.</p>
+    <p>Name one or two real people who'd give you a valuable contrarian view on the opportunity in it, even if it challenges the one you hold.</p>
     <div class="card" id="rows"></div>
     <div class="muted small" style="margin-top:8px">Keep these names for yourself, on your card.</div>
     <div class="err" id="e3"></div>
@@ -634,16 +642,19 @@ function viewS4(){
     <div class="progress">Reflection 3 of 3</div>
     <span class="lens-tag">Horizon + Altitude + Agency</span>
     <h2>A dilemma you can see coming</h2>
-    <p>Think of a dilemma a year or two out. Name it, and the date you'd commit to deciding by.</p>
+    <p>Think of a dilemma a year or two out.</p>
     <div class="card">
-      <label class="field" for="dil">The dilemma</label>
+      <label class="field" for="dil">What's the long-range dilemma?</label>
       <input id="dil" type="text" placeholder="Name it" />
-      <label class="field" for="fd">I'll decide by</label>
+      <label class="field" for="fdec">A smaller, shorter-term decision you could make that begins to answer or alleviate it</label>
+      <textarea id="fdec" placeholder="Write as much or as little as you like."></textarea>
+      <label class="field" for="fd">By when will you make that smaller decision?</label>
       <input id="fd" type="date" />
     </div>
     <button class="btn" id="next">Continue</button>
   </div>`);
   bindInput(node, "#dil", ()=>state.during.future_dilemma, v=>state.during.future_dilemma=v);
+  bindInput(node, "#fdec", ()=>state.during.future_decision, v=>state.during.future_decision=v);
   bindInput(node, "#fd", ()=>state.during.future_decide_by, v=>state.during.future_decide_by=v);
   node.querySelector("#next").addEventListener("click", ()=>{ saveDuring(false); state.stage="s5"; render(); });
   return node;
@@ -654,8 +665,8 @@ function viewS5(){
   const node = el(`<div>
     <div class="progress">Reflection 3 of 3</div>
     <span class="lens-tag">Horizon + Altitude + Agency</span>
-    <h2>Who would see it differently?</h2>
-    <p>One person who would see this future dilemma differently from you, and what they'd bring.</p>
+    <h2>Whose perspective could you get?</h2>
+    <p>Whose alternative perspective could you get in that time, and what would they bring?</p>
     <div class="card">
       <input id="fp_p" type="text" placeholder="Name" />
       <input id="fp_b" type="text" placeholder="What they'd bring" style="margin-top:10px" />
@@ -672,8 +683,8 @@ function viewS6(){
   const node = el(`<div>
     <div class="progress">Reflection 3 of 3</div>
     <span class="lens-tag">Horizon + Altitude + Agency</span>
-    <h2>Who you become</h2>
-    <p>If you hold this open with full discipline, who do you become while you're holding it?</p>
+    <h2>The leader you become</h2>
+    <p>If you could hold the open using these three lenses whenever you face uncertainty, what kind of leader would you become?</p>
     <div class="card"><textarea id="t" placeholder="Write as much or as little as you like."></textarea></div>
     <button class="btn" id="next">Continue</button>
   </div>`);
