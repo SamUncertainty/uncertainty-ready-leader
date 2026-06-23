@@ -524,6 +524,7 @@ function ensureDuring(){
 function duringPayload(){
   const d = ensureDuring();
   return { reflections: {
+    past_decision: d.past_decision || "",
     horizon_past: d.horizon_past || "",
     past_outcome: d.past_outcome || "",
     live_decision: d.live_decision || "",
@@ -593,13 +594,16 @@ function viewS1(){
     <h2>A past decision</h2>
     <p>Bring to mind a decision you made under pressure, and came to regret.</p>
     <div class="card">
-      <label class="field" for="t1">Looking back, what could you have done to change the timeline you were under?</label>
+      <label class="field" for="t0">What was the decision?</label>
+      <textarea id="t0" placeholder="Name it."></textarea>
+      <label class="field" for="t1">Looking back, what timeline do you wish you'd given it?</label>
       <textarea id="t1" placeholder="Write as much or as little as you like."></textarea>
-      <label class="field" for="t2">And how would that have changed the outcome?</label>
+      <label class="field" for="t2">Why would that timeline have served you better?</label>
       <textarea id="t2" placeholder="Write as much or as little as you like."></textarea>
     </div>
     <button class="btn" id="next">Continue</button>
   </div>`);
+  bindInput(node, "#t0", ()=>state.during.past_decision, v=>state.during.past_decision=v);
   bindInput(node, "#t1", ()=>state.during.horizon_past, v=>state.during.horizon_past=v);
   bindInput(node, "#t2", ()=>state.during.past_outcome, v=>state.during.past_outcome=v);
   node.querySelector("#next").addEventListener("click", ()=>{ saveDuring(false); state.stage="hold_b"; render(); });
