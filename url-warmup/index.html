@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>URL warm-up</title>
+<title>The decision experiment</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
@@ -62,7 +62,7 @@
   .scenario{font-size:16px;color:#fff;margin:2px 0 10px}
   .scenario b{color:var(--mag)}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0}
-  .tile{position:relative;background:#1c1c1c;border:1px solid var(--line);border-radius:11px;padding:11px 11px 10px;min-height:84px;text-align:left;color:var(--ink);display:flex;flex-direction:column;justify-content:space-between;width:100%}
+  .tile{position:relative;background:#1c1c1c;border:1px solid var(--line);border-radius:11px;padding:10px 11px 9px;min-height:72px;text-align:left;color:var(--ink);display:flex;flex-direction:column;justify-content:space-between;width:100%}
   .tile .t-type{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
   .tile.headline{background:linear-gradient(180deg,#241019,#1a0c12);border-color:rgba(236,0,140,.35)}
   .tile.headline .t-type{color:var(--mag)}
@@ -72,6 +72,7 @@
   .tile .t-lean{font-size:13px;font-weight:bold}
   .tile.opened{outline:1px solid rgba(255,255,255,.12)}
   .lean1{color:#5ab0ff}.lean2{color:#ffb020}
+  .commit{position:sticky;bottom:0;background:var(--bg);padding:8px 0 6px;margin-top:2px;z-index:5;box-shadow:0 -10px 14px -8px var(--bg)}
   .commit .row button{font-weight:bold}
   .opt1{background:#1e3a5f;color:#cfe6ff;border:1px solid #2b5688}
   .opt2{background:#4a3a12;color:#ffe6b0;border:1px solid #806016}
@@ -100,13 +101,13 @@
 <div class="wrap">
   <div class="brandbar">
     <div class="logo">UNCERTAINTY <b>EXPERTS</b></div>
-    <div class="pill"><b id="roundPill">Warm-up</b></div>
+    <div class="pill"><b id="roundPill">Experiment A</b></div>
   </div>
 
   <!-- NAME -->
   <section class="screen on" id="s-name">
-    <h1>THE URL<br>WARM-UP</h1>
-    <p class="muted small" style="margin-top:-6px">A 90-second decision game. Your score goes on the room leaderboard, so use your real first name.</p>
+    <h1 id="bigTitle">EXPERIMENT A</h1>
+    <p class="muted small" style="margin-top:-6px">A 90-second decision game. Use your real first name, your score goes on the room board.</p>
     <svg class="ecg" viewBox="0 0 480 40" preserveAspectRatio="none"><polyline points="0,20 120,20 140,20 150,6 162,34 174,20 300,20 320,20 332,4 344,36 356,20 480,20" fill="none" stroke="#ec008c" stroke-width="2"/></svg>
     <div class="card accent">
       <label for="fn" class="small muted" style="display:block;margin-bottom:8px">YOUR FIRST NAME</label>
@@ -117,48 +118,48 @@
     <p class="foot">Your name powers the live leaderboard during the session only, then it is wiped. No email, no account, no tracking.</p>
   </section>
 
-  <!-- INTRO -->
-  <section class="screen" id="s-intro">
-    <h2>HOW IT WORKS</h2>
-    <div class="card accent">
-      <p style="margin-top:0">A decision is in front of you, with a clock. The board hides pieces of evidence. Each one you check costs you. Gather too little and you are guessing. Gather everything and you burn the budget and the window. The question the game answers is not what you say you would do. It is what you actually do.</p>
-    </div>
-    <p class="small muted">It reads your <b style="color:#ddd">Evidence-Before-Commitment</b>: how much of the available evidence you gather before you commit, against the optimal band for the board. The score rewards the right call, sampling near the optimum and resisting the cheap headline. Never speed.</p>
-    <button class="btn" onclick="go('s-claim')">Start</button>
-    <button class="btn ghost" style="margin-top:8px" onclick="openSci()">Read the science</button>
-    <p class="foot">A behavioural read of decision behaviour in a simulated scenario, not under real-world consequence. Benchmark figures shown are illustrative until validated on real cohorts.</p>
-  </section>
-
   <!-- CLAIM (say-do) -->
   <section class="screen" id="s-claim">
     <h2>FIRST, A QUESTION</h2>
-    <div class="card">
-      <p style="margin-top:0">In general, when a decision really matters, how much of the available evidence do you typically gather before you commit?</p>
+    <div class="card accent">
+      <p style="margin-top:0">When a big call really matters, how much do you dig before you commit?</p>
       <input class="slider" id="claim" type="range" min="0" max="100" value="50" style="width:100%" oninput="document.getElementById('claimv').textContent=this.value+'%'">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>I commit fast</span><span id="claimv">50%</span><span>I gather it all</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>Commit fast</span><span id="claimv">50%</span><span>Gather it all</span></div>
     </div>
-    <p class="small muted">We capture your claim now and compare it to what you actually do. The gap between the two, the say-do gap, is the thing the workshop works on.</p>
+    <p class="small muted">We will compare this to what you actually do.</p>
     <button class="btn" onclick="saveClaim()">Continue</button>
   </section>
 
-  <!-- FORCED EXAMPLE -->
-  <section class="screen" id="s-example">
+  <!-- TILES INTRO -->
+  <section class="screen" id="s-tiles">
     <h2>TWO KINDS OF TILE</h2>
-    <p>Open each one to feel the difference.</p>
+    <p class="small muted" style="margin-top:-4px">Tap each one to see the difference.</p>
     <div class="grid">
       <button class="tile headline" id="exH" onclick="openEx('h')">
         <div class="t-type">Headline</div>
         <div class="t-desc">The confident exec summary</div>
-        <div class="t-cost" id="exHb">Cost 1 to open</div>
+        <div class="t-cost" id="exHb">Cost 1</div>
       </button>
       <button class="tile detail" id="exD" onclick="openEx('d')">
         <div class="t-type">Detail</div>
         <div class="t-desc">Independent expert review</div>
-        <div class="t-cost" id="exDb">Cost 2 to open</div>
+        <div class="t-cost" id="exDb">Cost 2</div>
       </button>
     </div>
-    <p class="small muted">Headlines are cheap and read cleanly, but the evidence is weak. Details cost more, but the evidence is strong. In the game you decide how much to open before you commit. The clock and your points are both running.</p>
-    <button class="btn" id="exContinue" disabled onclick="startSession()">Open both tiles to start</button>
+    <p class="small muted">Headlines are cheap but weak. Details cost more but are strong.</p>
+    <button class="btn" id="exContinue" disabled onclick="startWalk()">Open both to continue</button>
+  </section>
+
+  <!-- WALKTHROUGH (no clock, no score) -->
+  <section class="screen" id="s-walk">
+    <div class="card accent" style="margin-bottom:10px"><p style="margin:0;font-size:15px" id="walkCoach"></p></div>
+    <div class="scenario" id="walkScenario"></div>
+    <div class="grid" id="walkGrid" style="display:none"></div>
+    <div class="row" id="walkOpts" style="display:none;margin-top:4px">
+      <button class="opt1" id="wo1" disabled></button>
+      <button class="opt2" id="wo2" disabled></button>
+    </div>
+    <button class="btn" id="walkBtn" style="margin-top:12px" onclick="walkNext()">Next: the evidence</button>
   </section>
 
   <!-- GAME -->
@@ -171,7 +172,7 @@
     <div class="scenario" id="scenario"></div>
     <div class="grid" id="grid"></div>
     <div class="commit">
-      <p class="small muted" style="margin:2px 0 6px">Commit when ready. You do not have to open everything.</p>
+      <p class="small muted" style="margin:2px 0 6px">Tap your call when ready.</p>
       <div class="row">
         <button class="opt1" id="o1" onclick="commit(0)"></button>
         <button class="opt2" id="o2" onclick="commit(1)"></button>
@@ -213,7 +214,7 @@
     <p class="foot" id="resFoot"></p>
   </section>
 
-  <p class="foot">Front-end of the URL warm-up. Scores post anonymously to our own UK database; first names power the live board during the session only and are wiped afterwards.</p>
+  <p class="foot">Front-end of the experiment. Scores post anonymously to our own UK database; first names power the live board during the session only and are wiped afterwards.</p>
 </div>
 
 <!-- SCIENCE OVERLAY -->
@@ -223,7 +224,7 @@
     <p class="small">The aim is a short behavioural read that survives contact with an academic partner and a sceptical CFO. The wrapper is ours. The science underneath is public and validated, and we say so.</p>
 
     <h3>What it is</h3>
-    <p class="small">The URL warm-up is an adapted <b>Information Sampling Task</b>. In the original, a participant uncovers tiles to gather evidence about an uncertain outcome and decides when to commit. The number of pieces sampled before deciding indexes <b>reflection impulsivity</b>, the tendency to act on too little or to over-gather. We skin it as a leadership decision under a visible cost and clock. EBC is our label for the sampling read.</p>
+    <p class="small">Each experiment is an adapted <b>Information Sampling Task</b>. In the original, a participant uncovers tiles to gather evidence about an uncertain outcome and decides when to commit. The number of pieces sampled before deciding indexes <b>reflection impulsivity</b>, the tendency to act on too little or to over-gather. We skin it as a leadership decision under a visible cost and clock. EBC is our label for the sampling read.</p>
     <p class="cite">Clark and colleagues, 2006, Information Sampling Task, part of the CANTAB battery. Reflection impulsivity. Known caveat: the task can over-estimate impulsivity if the cost structure is misread, Hauser and colleagues, 2017, so we keep the economics simple and run a comprehension check.</p>
 
     <h3>The ancestor we deliberately did not use</h3>
@@ -269,8 +270,9 @@ const roundOverride = (params.get("round") || "").toLowerCase();
 const ROUND = (roundOverride === "warmup" || roundOverride === "closing")
   ? roundOverride
   : (localStorage.getItem(PLAYED_KEY) ? "closing" : "warmup");
-const ROUND_LABEL = ROUND === "closing" ? "Closing" : "Warm-up";
+const ROUND_LABEL = ROUND === "closing" ? "Experiment B" : "Experiment A";
 document.getElementById("roundPill").textContent = ROUND_LABEL;
+{ const _bt=document.getElementById("bigTitle"); if(_bt) _bt.textContent = ROUND_LABEL.toUpperCase(); }
 
 /* Stable per-player id, per session and round, so each phone updates its OWN board
    row live as it plays, instead of inserting a new row each time. */
@@ -290,7 +292,7 @@ let firstName = "";
 
 /* ---------- parameters (tunable, all defensible) ---------- */
 const P_DETAIL=0.74, P_HEAD=0.55, COST_DETAIL=2, COST_HEAD=1;
-const N_DETAIL=8, N_HEAD=2, CLOCK=40, ROUNDS=3, BUDGET=100;
+const N_DETAIL=6, N_HEAD=2, CLOCK=40, ROUNDS=3, BUDGET=100;
 
 const DETAIL_POOL=["12-month audited data","Independent expert review","Frontline team interviews","Customer cohort analysis","Competitor benchmark","Risk and compliance read","Finance stress-test","Operational pilot result","Three-year trend line","Direct user observation","Supplier track record","Scenario model output"];
 const HEAD_POOL=["The confident exec summary","The gut read from the room","The headline everyone repeats","The reassuring one-liner"];
@@ -348,24 +350,82 @@ function submitName(){
   if(v.length > 24){ err.textContent = "A bit shorter please (first name only)."; return; }
   firstName = v;
   err.textContent = "";
-  go('s-intro');
+  go('s-claim');
 }
 document.getElementById('fn').addEventListener('keydown', e=>{ if(e.key==='Enter') submitName(); });
 
-function saveClaim(){claimVal=+document.getElementById('claim').value;resetExample();go('s-example');}
+function saveClaim(){
+  claimVal=+document.getElementById('claim').value;
+  if(ROUND==="closing"){ startSession(); return; }   // Experiment B: skip the teaching, go straight in
+  resetExample(); go('s-tiles');
+}
 let exOpened={h:false,d:false};
 function resetExample(){
   exOpened={h:false,d:false};
-  document.getElementById('exHb').textContent="Cost 1 to open";
-  document.getElementById('exDb').textContent="Cost 2 to open";
-  const b=document.getElementById('exContinue');b.disabled=true;b.textContent="Open both tiles to start";
+  document.getElementById('exHb').textContent="Cost 1";
+  document.getElementById('exDb').textContent="Cost 2";
+  const b=document.getElementById('exContinue');b.disabled=true;b.textContent="Open both to continue";
 }
 function openEx(k){
   if(k==='h'){document.getElementById('exHb').innerHTML="<span class='t-lean lean2'>Weak evidence</span>";exOpened.h=true;}
   else{document.getElementById('exDb').innerHTML="<span class='t-lean lean1'>Strong evidence</span>";exOpened.d=true;}
-  if(exOpened.h&&exOpened.d){const b=document.getElementById('exContinue');b.disabled=false;b.textContent="Start the warm-up";}
+  if(exOpened.h&&exOpened.d){const b=document.getElementById('exContinue');b.disabled=false;b.textContent="Continue";}
 }
 function startSession(){deck=pickScenarios();round=0;results=[];startRound();}
+
+/* ---------- guided walkthrough: teaches the board with no clock, no score, no posting ---------- */
+const WALK={q:"A supplier has missed two deliveries in a row.",o1:"Switch supplier now",o2:"Hold and give one cycle"};
+const WALK_TILES=[
+  {type:'detail',desc:'Independent expert review',cost:2,lean:0,open:false},
+  {type:'detail',desc:'12-month audited data',cost:2,lean:0,open:false},
+  {type:'headline',desc:'The confident exec summary',cost:1,lean:1,open:false},
+  {type:'detail',desc:'Frontline team interviews',cost:2,lean:0,open:false}
+];
+let walkStep=0, walkOpened=0;
+function startWalk(){
+  walkStep=0; walkOpened=0; WALK_TILES.forEach(t=>t.open=false);
+  document.getElementById('walkScenario').innerHTML=WALK.q+"<br><b>"+WALK.o1+"</b> or <b>"+WALK.o2+"</b>?";
+  document.getElementById('wo1').textContent=WALK.o1;
+  document.getElementById('wo2').textContent=WALK.o2;
+  document.getElementById('walkGrid').style.display='none';
+  document.getElementById('walkOpts').style.display='none';
+  document.getElementById('walkCoach').textContent="First, the decision. Two ways to go, and the clock has not started yet.";
+  const b=document.getElementById('walkBtn');b.style.display='block';b.textContent="Next: the evidence";b.onclick=walkNext;
+  renderWalkGrid();
+  go('s-walk');
+}
+function renderWalkGrid(){
+  const g=document.getElementById('walkGrid');g.innerHTML='';
+  WALK_TILES.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='tile '+t.type+(t.open?' opened':'');
+    const leanLabel=t.lean===0?WALK.o1:WALK.o2;
+    const leanCls=t.lean===0?'lean1':'lean2';
+    b.innerHTML='<div class="t-type">'+(t.type==='headline'?'Headline':'Detail')+'</div>'+
+      '<div class="t-desc">'+t.desc+'</div>'+
+      (t.open?'<div class="t-lean '+leanCls+'">Leans: '+leanLabel+'</div>':'<div class="t-cost">Cost '+t.cost+'</div>');
+    b.onclick=()=>walkOpen(i);
+    g.appendChild(b);
+  });
+}
+function walkNext(){
+  if(walkStep===0){
+    walkStep=1;
+    document.getElementById('walkGrid').style.display='';
+    document.getElementById('walkCoach').textContent="The evidence is hidden. Each tile you open costs points. Tap one to try.";
+    document.getElementById('walkBtn').style.display='none';
+  }
+}
+function walkOpen(i){
+  if(walkStep<1)return;
+  const t=WALK_TILES[i];if(t.open)return;
+  t.open=true;walkOpened++;renderWalkGrid();
+  if(walkOpened===1){
+    document.getElementById('walkCoach').textContent="See how it leans? Open as many as you judge you need, then tap your call. In the real round, the clock is running.";
+    document.getElementById('walkOpts').style.display='';
+    const b=document.getElementById('walkBtn');b.style.display='block';b.textContent="Start "+ROUND_LABEL;b.onclick=startSession;
+  }
+}
 
 /* ---------- round ---------- */
 function startRound(){
@@ -497,7 +557,7 @@ async function postScore(sum){
   try{
     await callPlay(sum);
     note.className='savenote ok';
-    note.textContent='You are on the '+ROUND_LABEL.toLowerCase()+' board.';
+    note.textContent='You are on the board ('+ROUND_LABEL+').';
   }catch(e){
     console.warn("score post failed", e);
     note.className='savenote bad';
@@ -510,7 +570,7 @@ function pct(x){return Math.round(x*100)+'%';}
 function renderResults(){
   const cur=myResult;
   document.getElementById('resTitle').textContent = "NICE ONE, "+ (firstName? firstName.toUpperCase() : "");
-  document.getElementById('resSub').textContent = ROUND_LABEL+" round. The reveal below is what you did, not what you said.";
+  document.getElementById('resSub').textContent = ROUND_LABEL+". The reveal below is what you did, not what you said.";
   document.getElementById('scoreBig').textContent = cur.score;
   document.getElementById('boardLink').href = "./board/?s="+encodeURIComponent(SESSION)+"&round="+ROUND;
 
@@ -534,7 +594,7 @@ function renderResults(){
               : "Your claim and your behaviour broadly matched, which is itself a useful calibration signal.";
   document.getElementById('sciSummary').innerHTML=
     "<h3 style='margin-top:0'>What this means, and the science under it</h3>"+
-    "<p class='small'>This warm-up is an adapted <b>Information Sampling Task</b> (Clark and colleagues, 2006), a validated measure of <b>reflection impulsivity</b>: how much evidence a person gathers before committing. It is a behavioural read, what you did, not what you said.</p>"+
+    "<p class='small'>This experiment is an adapted <b>Information Sampling Task</b> (Clark and colleagues, 2006), a validated measure of <b>reflection impulsivity</b>: how much evidence a person gathers before committing. It is a behavioural read, what you did, not what you said.</p>"+
     "<p class='small'>You gathered <b>"+ebcPct+"%</b> of the available evidence before committing, "+posLine+". Your call accuracy was <b>"+accPct+"%</b>. Accuracy tracks sampling because committing on no evidence is a coin flip by construction, which is the whole point of the measure.</p>"+
     "<p class='small'>Your fluency-lure rate was <b>"+lurePct+"%</b>, how often you committed on the cheap, confident headline alone. This is <b>processing fluency</b> (Alter and Oppenheimer, 2009): information that reads easily feels truer and safer, so people grab the clean summary and act. "+gapLine+"</p>"+
     "<p class='small muted'>The trainable shift is toward the optimal band and away from the headline. Anti-compulsive, not anti-decisive. Figures here are illustrative until validated on real cohorts.</p>";
@@ -545,8 +605,8 @@ function renderResults(){
   document.getElementById('mTime').textContent=cur.time.toFixed(0)+'s';
 
   document.getElementById('resFoot').textContent = ROUND==="warmup"
-    ? "Come back to this same link at the close of the session to play the closing round."
-    : "That is your closing round in. Thanks for playing.";
+    ? "Experiment A logged. Come back at the close of the session for Experiment B."
+    : "Experiment B logged. Thanks for playing.";
 }
 </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>URL warm-up — leaderboard</title>
+<title>The decision experiment — leaderboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
@@ -74,8 +74,8 @@
   <h1>THE ROOM<span class="sess" id="sessLabel"></span></h1>
 
   <div class="tabs">
-    <button class="tab" id="tab-warmup"  onclick="setRound('warmup')">Warm-up<span class="n" id="n-warmup">0 players</span></button>
-    <button class="tab" id="tab-closing" onclick="setRound('closing')">Closing<span class="n" id="n-closing">0 players</span></button>
+    <button class="tab" id="tab-warmup"  onclick="setRound('warmup')">Experiment A<span class="n" id="n-warmup">0 players</span></button>
+    <button class="tab" id="tab-closing" onclick="setRound('closing')">Experiment B<span class="n" id="n-closing">0 players</span></button>
   </div>
 
   <div class="summary">
@@ -105,7 +105,7 @@ let viewRound = (params.get("round")||"").toLowerCase();
 if(viewRound!=="warmup" && viewRound!=="closing") viewRound=null; // auto-pick once data arrives
 
 document.getElementById("sessLabel").textContent = SESSION;
-document.title = "URL warm-up — " + SESSION;
+document.title = "The decision experiment — " + SESSION;
 
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -161,7 +161,7 @@ function render(){
   // Both-round comparison strip
   const cmp = document.getElementById("compare");
   if(wN && cN){
-    cmp.innerHTML = "Warm-up avg <b>"+board.warmup.avg_score+"</b>  →  Closing avg <b>"+board.closing.avg_score+"</b>"
+    cmp.innerHTML = "Experiment A avg <b>"+board.warmup.avg_score+"</b>  →  Experiment B avg <b>"+board.closing.avg_score+"</b>"
       + "  <span style='color:#666'>(directional)</span>";
   } else { cmp.innerHTML = ""; }
 
@@ -173,7 +173,7 @@ function render(){
   if(!rows.length){
     table.style.display="none";
     empty.style.display="block";
-    empty.textContent = data.n ? "Scores landing…" : "Waiting for the first "+r+" scores to land…";
+    empty.textContent = data.n ? "Scores landing…" : "Waiting for the first "+(r==="closing"?"Experiment B":"Experiment A")+" scores to land…";
     return;
   }
   empty.style.display="none";
