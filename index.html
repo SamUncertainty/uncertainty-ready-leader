@@ -45,6 +45,17 @@
     border-radius:8px;padding:12px 0;font-size:14px;font-weight:600;cursor:pointer}
   .scale button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
   .scale-ends{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-top:7px}
+  /* 0 to 10 slider */
+  .readout{text-align:center;font-size:46px;font-weight:800;line-height:1;color:var(--accent);margin:4px 0 10px}
+  .readout.dash{color:var(--muted);font-weight:600}
+  input[type=range].slider{-webkit-appearance:none;appearance:none;width:100%;height:16px;border-radius:999px;
+    background:#0b0f14;border:1px solid var(--line);outline:none;margin:6px 0 2px;cursor:pointer}
+  input[type=range].slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:36px;height:36px;
+    border-radius:50%;background:var(--accent);border:4px solid #0b0f14;box-shadow:0 0 0 1px var(--line);cursor:pointer}
+  input[type=range].slider::-moz-range-thumb{width:36px;height:36px;border-radius:50%;background:var(--accent);
+    border:4px solid #0b0f14;box-shadow:0 0 0 1px var(--line);cursor:pointer}
+  input[type=range].slider.untouched::-webkit-slider-thumb{background:#3a414c}
+  input[type=range].slider.untouched::-moz-range-thumb{background:#3a414c}
   .choice{display:block;width:100%;text-align:left;background:#0b0f14;border:1px solid var(--line);
     color:var(--ink);border-radius:10px;padding:14px 16px;font-size:16px;cursor:pointer;margin-top:10px}
   .choice[aria-pressed=true]{border-color:var(--accent);background:rgba(0,255,0,.10)}
@@ -167,6 +178,10 @@ function loadState(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || {
 function saveState(){ try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} }
 
 let state = loadState();
+/* A finished run starts fresh when the link is reopened, so the same phone (or a
+   repeat go) doesn't land on the closing "That is everything" screen. An UNFINISHED
+   run still resumes, so a dropped signal mid-session never loses progress. */
+if (state.stage === "close") state = {};
 if (!state.token) state.token = (crypto.randomUUID ? crypto.randomUUID()
   : "t-"+Date.now()+"-"+Math.random().toString(16).slice(2));
 if (!state.stage) state.stage = "welcome";
@@ -248,6 +263,7 @@ function render(){
   const view = ({
     welcome: viewWelcome,
     pre_intro: viewPreIntro,
+    hold_opener: viewHoldOpener,
     pre_battery: () => viewBattery("pre"),
     hold_a: viewHoldA,
     s1: viewS1,
@@ -269,20 +285,25 @@ function render(){
 }
 
 /* ---- widgets ---- */
+/* A 0 to 10 slider (kinder on a phone than eleven tiny buttons). It stays
+   visibly UNSET until the participant moves it, so we can still tell a genuine
+   answer from an untouched control: ans[id] is only written on first input, and
+   the Next button stays gated until then. The locked 0 to 10 range is unchanged. */
 function scaleRow(text, current, onPick){
+  const has = typeof current === "number";
   const wrap = el(`<div class="q"><div class="qtext">${esc(text)}</div></div>`);
-  const row = el(`<div class="scale"></div>`);
-  for (let n=CONTENT.scale.min; n<=CONTENT.scale.max; n++){
-    const b = el(`<button type="button" aria-pressed="${current===n}">${n}</button>`);
-    b.addEventListener("click", ()=>{
-      /* Update selection IN PLACE. No re-render on a tap, so the page never jumps
-         to the top on the 16-item battery. render() runs only on screen changes. */
-      row.querySelectorAll("button").forEach(bb => bb.setAttribute("aria-pressed", String(Number(bb.textContent)===n)));
-      onPick(n);
-    });
-    row.appendChild(b);
-  }
-  wrap.appendChild(row);
+  const readout = el(`<div class="readout${has ? "" : " dash"}">${has ? current : "&ndash;"}</div>`);
+  const slider = el(`<input type="range" min="${CONTENT.scale.min}" max="${CONTENT.scale.max}" step="1" value="${has ? current : Math.round((CONTENT.scale.min+CONTENT.scale.max)/2)}" class="slider${has ? "" : " untouched"}" aria-label="0 to 10" />`);
+  slider.addEventListener("input", ()=>{
+    /* In place: no re-render on a drag, so the page never jumps. */
+    slider.classList.remove("untouched");
+    readout.classList.remove("dash");
+    const n = Number(slider.value);
+    readout.textContent = String(n);
+    onPick(n);
+  });
+  wrap.appendChild(readout);
+  wrap.appendChild(slider);
   wrap.appendChild(el(`<div class="scale-ends"><span>${esc(CONTENT.scale.minLabel)}</span><span>${esc(CONTENT.scale.maxLabel)}</span></div>`));
   return wrap;
 }
@@ -363,7 +384,7 @@ function viewPreIntro(){
   node.querySelector("#next").addEventListener("click", ()=>{
     const err = node.querySelector("#introErr");
     if (!ans.paradox){ err.textContent="Please choose one of the two options."; return; }
-    state.stage = "pre_battery"; render();
+    state.stage = "hold_opener"; render();
   });
   return node;
 }
@@ -526,6 +547,8 @@ function holdScreen(brand, heading, body, nextStage, primary){
   node.querySelector("#go").addEventListener("click", ()=>{ state.stage = nextStage; render(); });
   return node;
 }
+/* Pause after the two opener questions, before the scored check-in. */
+function viewHoldOpener(){ return holdScreen("Hold here", "Stay with that.", "We'll take the measure together in a moment. Tap Continue when prompted.", "pre_battery", false); }
 function viewHoldA(){ ensureDuring(); return holdScreen("Thank you", "That's the opening measure done.", "We'll move through three short reflections together. Tap Continue when prompted.", "s1", false); }
 function viewHoldB(){ return holdScreen("Hold here", "Stay with that.", "Tap Continue when prompted.", "s2", false); }
 function viewHoldC(){ return holdScreen("Hold here", "Last one together.", "Hold there. Tap Continue when prompted.", "s4", false); }
