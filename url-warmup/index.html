@@ -81,6 +81,11 @@
   .metric .v{font-family:var(--head);font-size:26px;letter-spacing:.03em}
   .v.good{color:var(--ok)}.v.warn{color:var(--warn)}.v.bad{color:var(--bad)}
   .scorebig{font-family:var(--head);font-size:74px;line-height:.9;color:var(--mag);letter-spacing:.02em}
+  .vsbar{position:relative;height:26px;background:#1c1c1c;border:1px solid var(--line);border-radius:13px;margin:12px 0 9px}
+  .vsfill{height:100%;background:var(--mag);border-radius:13px;transition:width .5s ease}
+  .vsavg{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--ink);left:0;display:none;border-radius:2px}
+  .vslabels{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted)}
+  .vslabels b{color:var(--ink);font-family:var(--head);letter-spacing:.02em;font-size:17px}
   .dial{position:relative;height:46px;margin:14px 0 4px;border-radius:8px;background:#1c1c1c;border:1px solid var(--line);overflow:hidden}
   .dial .band{position:absolute;top:0;bottom:0;background:rgba(55,214,122,.18);border-left:1px dashed rgba(55,214,122,.6);border-right:1px dashed rgba(55,214,122,.6)}
   .dial .opt{position:absolute;top:0;bottom:0;width:2px;background:var(--ok)}
@@ -193,25 +198,12 @@
       <a id="boardLink" class="btn" style="display:block;margin-top:14px;text-decoration:none;text-align:center" href="#">See the room leaderboard</a>
     </div>
 
-    <div class="card" id="sciSummary"></div>
-
-    <h3>Evidence-Before-Commitment</h3>
-    <div class="dial" id="dial">
-      <div class="band" id="band"></div>
-      <div class="opt" id="optMark"></div>
-      <div class="me" id="meMark"></div>
-    </div>
-    <div class="axis"><span>0% (snap)</span><span>optimal band</span><span>100% (stall)</span></div>
-    <p class="small muted" id="ebcRead"></p>
-
-    <div class="card" style="margin-top:14px">
-      <div class="metric"><span>Call accuracy</span><span class="v" id="mAcc"></span></div>
-      <div class="metric"><span>Fluency-lure rate <span class="muted small">(committed on headline alone)</span></span><span class="v" id="mLure"></span></div>
-      <div class="metric"><span>Say-do gap <span class="muted small">(claimed minus actual)</span></span><span class="v" id="mGap"></span></div>
-      <div class="metric" style="border-bottom:0"><span>Time to commit <span class="muted small">(measured, not scored)</span></span><span class="v" id="mTime" style="color:var(--muted)"></span></div>
+    <div class="card">
+      <div class="stat-l" style="text-align:center">Where you landed vs the room</div>
+      <div class="vsbar"><div class="vsfill" id="vsFill"></div><div class="vsavg" id="vsAvgMark"></div></div>
+      <div class="vslabels"><span id="vsYou">You</span><span id="vsRoom">Room average …</span></div>
     </div>
 
-    <button class="btn ghost" style="margin-top:16px" onclick="openSci()">Read the science</button>
     <p class="foot" id="resFoot"></p>
   </section>
 
@@ -530,7 +522,7 @@ function finishSession(){
   if(ROUND==="warmup"){ try{ localStorage.setItem(PLAYED_KEY,"1"); }catch(e){} }
   renderResults();
   go('s-res');
-  postScore(myResult);
+  postScore(myResult).then(updateVsAverage);
 }
 
 /* ---------- post score to the live board ----------
@@ -580,43 +572,35 @@ function pct(x){return Math.round(x*100)+'%';}
 function renderResults(){
   const cur=myResult;
   document.getElementById('resTitle').textContent = "NICE ONE, "+ (firstName? firstName.toUpperCase() : "");
-  document.getElementById('resSub').textContent = ROUND_LABEL+". The reveal below is what you did, not what you said.";
+  document.getElementById('resSub').textContent = ROUND_LABEL+". Your decision-quality score.";
   document.getElementById('scoreBig').textContent = cur.score;
   document.getElementById('boardLink').href = "./board/?s="+encodeURIComponent(SESSION)+"&round="+ROUND;
 
-  // dial
-  document.getElementById('band').style.left=pct(OPT.bandLo);
-  document.getElementById('band').style.width=(Math.round((OPT.bandHi-OPT.bandLo)*100))+'%';
-  document.getElementById('optMark').style.left=pct(OPT.optFrac);
-  document.getElementById('meMark').style.left=pct(cur.ebc);
-  let where = cur.ebc < OPT.bandLo ? "below the optimal band (under-gathering, the snap reflex)" :
-              cur.ebc > OPT.bandHi ? "above the optimal band (over-gathering, the stall reflex)" :
-              "inside the optimal band";
-  document.getElementById('ebcRead').innerHTML="You gathered <b>"+pct(cur.ebc)+"</b> of the available detail evidence before committing. That is "+where+". The optimal band for these boards is "+pct(OPT.bandLo)+" to "+pct(OPT.bandHi)+" <span class='tag'>Illustrative</span>";
-
-  const ebcPct=Math.round(cur.ebc*100), accPct=Math.round(cur.acc*100), lurePct=Math.round(cur.lure*100);
-  const gap=Math.round(claimVal-cur.ebc*100);
-  let posLine = cur.ebc < OPT.bandLo ? "below the optimal band, the snap reflex of under-gathering" :
-                cur.ebc > OPT.bandHi ? "above the optimal band, the stall reflex of over-gathering" :
-                "inside the optimal band";
-  let gapLine = gap>10 ? "You claimed you gather more evidence than you actually did. That distance is the say-do gap the workshop targets, the leader who values evidence but commits on the headline."
-              : gap<-10 ? "You actually gathered more than you said you typically do, so your instinct undersells your behaviour."
-              : "Your claim and your behaviour broadly matched, which is itself a useful calibration signal.";
-  document.getElementById('sciSummary').innerHTML=
-    "<h3 style='margin-top:0'>What this means, and the science under it</h3>"+
-    "<p class='small'>This experiment is an adapted <b>Information Sampling Task</b> (Clark and colleagues, 2006), a validated measure of <b>reflection impulsivity</b>: how much evidence a person gathers before committing. It is a behavioural read, what you did, not what you said.</p>"+
-    "<p class='small'>You gathered <b>"+ebcPct+"%</b> of the available evidence before committing, "+posLine+". Your call accuracy was <b>"+accPct+"%</b>. Accuracy tracks sampling because committing on no evidence is a coin flip by construction, which is the whole point of the measure.</p>"+
-    "<p class='small'>Your fluency-lure rate was <b>"+lurePct+"%</b>, how often you committed on the cheap, confident headline alone. This is <b>processing fluency</b> (Alter and Oppenheimer, 2009): information that reads easily feels truer and safer, so people grab the clean summary and act. "+gapLine+"</p>"+
-    "<p class='small muted'>The trainable shift is toward the optimal band and away from the headline. Anti-compulsive, not anti-decisive. Figures here are illustrative until validated on real cohorts.</p>";
-
-  const acc=document.getElementById('mAcc');acc.textContent=pct(cur.acc);acc.className='v '+(cur.acc>=0.66?'good':cur.acc>=0.5?'warn':'bad');
-  const lure=document.getElementById('mLure');lure.textContent=pct(cur.lure);lure.className='v '+(cur.lure<=0.1?'good':cur.lure<=0.34?'warn':'bad');
-  const g=document.getElementById('mGap');g.textContent=(gap>0?'+':'')+gap+' pts';g.className='v '+(Math.abs(gap)<=10?'good':Math.abs(gap)<=25?'warn':'bad');
-  document.getElementById('mTime').textContent=cur.time.toFixed(0)+'s';
+  // You vs the room: show your own bar now; the room average marker fills in once the board replies.
+  const you=Math.max(0,Math.min(100,cur.score));
+  document.getElementById('vsFill').style.width = you+'%';
+  document.getElementById('vsYou').innerHTML = "You <b>"+cur.score+"</b>";
 
   document.getElementById('resFoot').textContent = ROUND==="warmup"
     ? "Experiment A logged. Come back at the close of the session for Experiment B."
     : "Experiment B logged. Thanks for playing.";
+}
+
+/* Fill in the room-average marker once the board responds, after the score is posted. */
+async function updateVsAverage(){
+  try{
+    const res=await fetch(SB_URL+"/rest/v1/rpc/call_board",{
+      method:"POST",
+      headers:{ "apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY, "Content-Type":"application/json" },
+      body: JSON.stringify({ p_session: SESSION })
+    });
+    if(!res.ok) return;
+    const b=await res.json(); const d=(b&&b[ROUND])||{}; const avg=d.avg_score;
+    if(avg==null) return;
+    const a=Math.max(0,Math.min(100,avg));
+    const m=document.getElementById('vsAvgMark'); m.style.left=a+'%'; m.style.display='block';
+    document.getElementById('vsRoom').innerHTML="Room average <b>"+avg+"</b>";
+  }catch(e){ /* leave the placeholder */ }
 }
 </script>
 </body>
