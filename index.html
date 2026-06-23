@@ -263,6 +263,7 @@ function render(){
   const view = ({
     welcome: viewWelcome,
     pre_intro: viewPreIntro,
+    pre_paradox: viewParadox,
     hold_opener: viewHoldOpener,
     pre_battery: () => viewBattery("pre"),
     hold_a: viewHoldA,
@@ -369,22 +370,37 @@ function viewPreIntro(){
     box.appendChild(qd);
   });
 
-  /* Decisiveness Paradox (stored A/B per locked mapping). */
+  node.querySelector("#next").addEventListener("click", ()=>{
+    state.stage = "pre_paradox"; render();
+  });
+  return node;
+}
+
+/* Decisiveness Paradox on its own screen, after the opener, before the hold. */
+function viewParadox(){
+  const ans = state.preAns;
+  const node = el(`<div>
+    <div class="progress">Before we begin</div>
+    <h2>One quick choice</h2>
+    <p class="muted small">There is no right answer. Choose the one that fits.</p>
+    <div class="card" id="parbox"></div>
+    <div class="err" id="parErr"></div>
+    <button class="btn" id="next">Continue</button>
+  </div>`);
+  const box = node.querySelector("#parbox");
   const par = el(`<div class="q"><div class="qtext">${esc(CONTENT.paradox.prompt)}</div></div>`);
   [["A",CONTENT.paradox.optionA],["B",CONTENT.paradox.optionB]].forEach(([k,txt])=>{
     const c = el(`<button type="button" class="choice" data-k="${k}" aria-pressed="${ans.paradox===k}">${esc(txt)}</button>`);
     c.addEventListener("click", ()=>{
       par.querySelectorAll(".choice").forEach(cc => cc.setAttribute("aria-pressed", String(cc.getAttribute("data-k")===k)));
-      ans.paradox=k; saveState(); /* no render: keep scroll position */
+      ans.paradox=k; saveState();
     });
     par.appendChild(c);
   });
   box.appendChild(par);
-
   node.querySelector("#next").addEventListener("click", ()=>{
-    const err = node.querySelector("#introErr");
-    if (!ans.paradox){ err.textContent="Please choose one of the two options."; return; }
-    state.stage = "hold_opener"; render();
+    if (!ans.paradox){ node.querySelector("#parErr").textContent="Please choose one of the two options."; return; }
+    state.stage="hold_opener"; render();
   });
   return node;
 }
@@ -497,8 +513,8 @@ function viewQual(_phase){
 /* ===================== DURING: facilitated reflection (one question per screen) =====================
    Holds are social gates: a calm waiting screen the participant leaves only when the
    facilitator cues the room to tap Continue. During model (token-paired, anonymous):
-   reflections{ horizon_past, live_decide_by, live_window, live_perspectives[3],
-   future_dilemma, future_decide_by, future_perspective{person,brings}, future_who_you_become }. */
+   reflections{ horizon_past, past_outcome, live_decision, live_decide_by, live_perspectives[1-2],
+   future_dilemma, future_decision, future_decide_by, future_perspective{person,brings}, future_who_you_become }. */
 function ensureDuring(){
   const d = state.during = state.during || {};
   if (!Array.isArray(d.live_perspectives)) d.live_perspectives = [{person:"",brings:""},{person:"",brings:""}];
@@ -648,14 +664,11 @@ function viewS4(){
       <input id="dil" type="text" placeholder="Name it" />
       <label class="field" for="fdec">A smaller, shorter-term decision you could make that begins to answer or alleviate it</label>
       <textarea id="fdec" placeholder="Write as much or as little as you like."></textarea>
-      <label class="field" for="fd">By when will you make that smaller decision?</label>
-      <input id="fd" type="date" />
     </div>
     <button class="btn" id="next">Continue</button>
   </div>`);
   bindInput(node, "#dil", ()=>state.during.future_dilemma, v=>state.during.future_dilemma=v);
   bindInput(node, "#fdec", ()=>state.during.future_decision, v=>state.during.future_decision=v);
-  bindInput(node, "#fd", ()=>state.during.future_decide_by, v=>state.during.future_decide_by=v);
   node.querySelector("#next").addEventListener("click", ()=>{ saveDuring(false); state.stage="s5"; render(); });
   return node;
 }
