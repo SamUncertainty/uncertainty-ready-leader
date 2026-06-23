@@ -8,7 +8,7 @@
 <style>
   :root{
     --bg:#0e1116; --panel:#161b22; --ink:#f2f4f7; --muted:#9aa4b2;
-    --line:#2a313c; --accent:#c8a24a; --accent-ink:#0e1116;
+    --line:#2a313c; --accent:#00ff00; --accent-ink:#0e1116;
     --ok:#3fb27f; --warn:#d98c4a; --radius:14px;
     --maxw:640px;
   }
@@ -47,7 +47,7 @@
   .scale-ends{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-top:7px}
   .choice{display:block;width:100%;text-align:left;background:#0b0f14;border:1px solid var(--line);
     color:var(--ink);border-radius:10px;padding:14px 16px;font-size:16px;cursor:pointer;margin-top:10px}
-  .choice[aria-pressed=true]{border-color:var(--accent);background:rgba(200,162,74,.10)}
+  .choice[aria-pressed=true]{border-color:var(--accent);background:rgba(0,255,0,.10)}
   .privacy{font-size:13px;color:var(--muted);border-left:2px solid var(--accent);padding:6px 0 6px 12px;margin:16px 0}
   .anon{font-size:12px;letter-spacing:.04em;color:var(--ok);font-weight:600;margin-top:6px}
   .progress{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
@@ -368,23 +368,40 @@ function viewPreIntro(){
   return node;
 }
 
-/* ---------------- Quantitative battery (pre and post) ---------------- */
+/* ---------------- Quantitative battery (pre and post) ----------------
+   One question per screen (Typeform-style), so nothing is squidged on a phone
+   and only one item is ever in view. The locked 0 to 10 scale and item wording
+   are unchanged. Progress and a Back button are added; answers persist in state
+   so a reload resumes on the same item. */
+function batterySteps(isPre){
+  const steps = [];
+  if (!isPre) steps.push({ type:"paradox" });                 // POST asks the paradox here (PRE asks it on the intro)
+  CONTENT.lenses.forEach(L => L.ids.forEach(id => steps.push({ type:"scale", id, text: CONTENT.items[id] })));
+  if (!isPre) steps.push({ type:"scale", id:"AG5", text: CONTENT.agencyPostOnly.text }); // post-only confidence item
+  steps.push({ type:"scale", id:"C1", text: CONTENT.control.text });
+  return steps;
+}
 function viewBattery(phase){
   const isPre = phase === "pre";
   const ans = isPre ? state.preAns : state.postAns;
+  const idxKey = isPre ? "preBatIdx" : "postBatIdx";
+  const steps = batterySteps(isPre);
+  let idx = state[idxKey] || 0;
+  if (idx > steps.length - 1) idx = steps.length - 1;
+  const step = steps[idx];
+
   const node = el(`<div>
-    <div class="progress">${isPre ? "Before we begin" : "One last check-in"}</div>
+    <div class="progress">${isPre ? "Before we begin" : "One last check-in"} &middot; ${idx+1} of ${steps.length}</div>
     <h2>${isPre ? "How things sit right now" : "How things sit now"}</h2>
-    <p class="muted small">Answer on instinct, on a scale of 0 to 10.</p>
     <div class="card" id="battery"></div>
     <div class="err" id="batErr"></div>
-    <button class="btn" id="next">Continue</button>
+    <button class="btn" id="next">${idx === steps.length-1 ? "Continue" : "Next"}</button>
+    <div id="backrow"></div>
   </div>`);
   const box = node.querySelector("#battery");
 
-  /* Paradox (the spine, stored A/B per locked mapping). On the PRE it is asked
-     earlier, on the challenge-framing intro screen; on the POST it stays here. */
-  if (!isPre){
+  if (step.type === "paradox"){
+    box.appendChild(el(`<p class="muted small" style="margin-top:0">There is no right answer. Choose the one that fits.</p>`));
     const par = el(`<div class="q"><div class="qtext">${esc(CONTENT.paradox.prompt)}</div></div>`);
     [["A",CONTENT.paradox.optionA],["B",CONTENT.paradox.optionB]].forEach(([k,txt])=>{
       const c = el(`<button type="button" class="choice" data-k="${k}" aria-pressed="${ans.paradox===k}">${esc(txt)}</button>`);
@@ -395,29 +412,29 @@ function viewBattery(phase){
       par.appendChild(c);
     });
     box.appendChild(par);
+  } else {
+    box.appendChild(el(`<p class="muted small" style="margin-top:0">Answer on instinct, on a scale of 0 to 10.</p>`));
+    box.appendChild(scaleRow(step.text, ans[step.id], (n)=>{ ans[step.id]=n; saveState(); /* no render: keep scroll position */ }));
   }
 
-  /* Lens items in locked order: H1-H4, A1-A4, AG1-AG4. */
-  CONTENT.lenses.forEach(L => L.ids.forEach(id => {
-    box.appendChild(scaleRow(CONTENT.items[id], ans[id], (n)=>{ ans[id]=n; saveState(); }));
-  }));
-  /* Post-only AG5. */
-  if (!isPre){
-    box.appendChild(scaleRow(CONTENT.agencyPostOnly.text, ans.AG5, (n)=>{ ans.AG5=n; saveState(); }));
+  /* Back, available once past the first item, so a mistap can be corrected. */
+  if (idx > 0){
+    const back = el(`<button class="btn secondary" id="back">Back</button>`);
+    back.addEventListener("click", ()=>{ state[idxKey] = idx-1; render(); });
+    node.querySelector("#backrow").appendChild(back);
   }
-  /* Control C1. */
-  box.appendChild(scaleRow(CONTENT.control.text, ans.C1, (n)=>{ ans.C1=n; saveState(); }));
 
   node.querySelector("#next").addEventListener("click", async ()=>{
     const err = node.querySelector("#batErr");
-    if (!isPre && !ans.paradox){ err.textContent="Please choose one of the two options."; return; }
-    const need = [];
-    CONTENT.lenses.forEach(L => L.ids.forEach(id => need.push(id)));
-    need.push("C1");
-    if (!isPre) need.push("AG5");
-    if (need.some(id => typeof ans[id] !== "number")){ err.textContent="Please answer every item."; return; }
+    /* Validate just this screen's answer. */
+    if (step.type === "paradox"){
+      if (!ans.paradox){ err.textContent="Please choose one of the two options."; return; }
+    } else if (typeof ans[step.id] !== "number"){
+      err.textContent="Please choose a number from 0 to 10."; return;
+    }
+    /* Advance, or finalise on the last item. */
+    if (idx < steps.length - 1){ state[idxKey] = idx+1; render(); return; }
     if (isPre){
-      /* No qualitative screen after the pre battery now: build and insert the pre response here. */
       const btn = node.querySelector("#next"); btn.disabled=true; btn.textContent="Saving.";
       const payload = buildBatteryPayload("pre");
       await insertRow("response", { token: state.token, session_code: SESSION, phase: "pre", payload });
