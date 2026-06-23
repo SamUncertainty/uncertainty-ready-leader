@@ -71,6 +71,7 @@
   .tile .t-cost{font-size:11px;color:var(--muted)}
   .tile .t-lean{font-size:13px;font-weight:bold}
   .tile.opened{outline:1px solid rgba(255,255,255,.12)}
+  .tile.picked{outline:2px solid var(--mag);outline-offset:-2px}
   .lean1{color:#5ab0ff}.lean2{color:#ffb020}
   .commit{position:sticky;bottom:0;background:var(--bg);padding:8px 0 6px;margin-top:2px;z-index:5;box-shadow:0 -10px 14px -8px var(--bg)}
   .commit .row button{font-weight:bold}
@@ -354,6 +355,11 @@ function submitName(){
 }
 document.getElementById('fn').addEventListener('keydown', e=>{ if(e.key==='Enter') submitName(); });
 
+/* If the phone restores a finished session from cache (re-scanning the QR, or coming back
+   to a backgrounded tab), reload so the player starts clean at the name screen, not the
+   old results page. */
+window.addEventListener('pageshow', function(e){ if(e.persisted){ location.reload(); } });
+
 function saveClaim(){
   claimVal=+document.getElementById('claim').value;
   if(ROUND==="closing"){ startSession(); return; }   // Experiment B: skip the teaching, go straight in
@@ -364,11 +370,13 @@ function resetExample(){
   exOpened={h:false,d:false};
   document.getElementById('exHb').textContent="Cost 1";
   document.getElementById('exDb').textContent="Cost 2";
+  document.getElementById('exH').classList.remove('picked');
+  document.getElementById('exD').classList.remove('picked');
   const b=document.getElementById('exContinue');b.disabled=true;b.textContent="Open both to continue";
 }
 function openEx(k){
-  if(k==='h'){document.getElementById('exHb').innerHTML="<span class='t-lean lean2'>Weak evidence</span>";exOpened.h=true;}
-  else{document.getElementById('exDb').innerHTML="<span class='t-lean lean1'>Strong evidence</span>";exOpened.d=true;}
+  if(k==='h'){document.getElementById('exHb').innerHTML="<span class='t-lean lean2'>Weak evidence</span>";document.getElementById('exH').classList.add('picked');exOpened.h=true;}
+  else{document.getElementById('exDb').innerHTML="<span class='t-lean lean1'>Strong evidence</span>";document.getElementById('exD').classList.add('picked');exOpened.d=true;}
   if(exOpened.h&&exOpened.d){const b=document.getElementById('exContinue');b.disabled=false;b.textContent="Continue";}
 }
 function startSession(){deck=pickScenarios();round=0;results=[];startRound();}
@@ -385,8 +393,8 @@ let walkStep=0, walkOpened=0;
 function startWalk(){
   walkStep=0; walkOpened=0; WALK_TILES.forEach(t=>t.open=false);
   document.getElementById('walkScenario').innerHTML=WALK.q+"<br><b>"+WALK.o1+"</b> or <b>"+WALK.o2+"</b>?";
-  document.getElementById('wo1').textContent=WALK.o1;
-  document.getElementById('wo2').textContent=WALK.o2;
+  const w1=document.getElementById('wo1'), w2=document.getElementById('wo2');
+  w1.textContent=WALK.o1; w2.textContent=WALK.o2; w1.disabled=true; w2.disabled=true;
   document.getElementById('walkGrid').style.display='none';
   document.getElementById('walkOpts').style.display='none';
   document.getElementById('walkCoach').textContent="First, the decision. Two ways to go, and the clock has not started yet.";
@@ -421,9 +429,11 @@ function walkOpen(i){
   const t=WALK_TILES[i];if(t.open)return;
   t.open=true;walkOpened++;renderWalkGrid();
   if(walkOpened===1){
-    document.getElementById('walkCoach').textContent="See how it leans? Open as many as you judge you need, then tap your call. In the real round, the clock is running.";
+    document.getElementById('walkCoach').textContent="See how it leans? Open more if you want, then tap your call below to begin for real. From here the clock is running.";
     document.getElementById('walkOpts').style.display='';
-    const b=document.getElementById('walkBtn');b.style.display='block';b.textContent="Start "+ROUND_LABEL;b.onclick=startSession;
+    const w1=document.getElementById('wo1'), w2=document.getElementById('wo2');
+    w1.disabled=false; w2.disabled=false; w1.onclick=startSession; w2.onclick=startSession;
+    document.getElementById('walkBtn').style.display='none';
   }
 }
 
