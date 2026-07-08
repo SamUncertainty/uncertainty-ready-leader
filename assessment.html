@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>The Uncertainty Ready Leader Assessment</title>
+<style>
+  :root{
+    --bg:#0d0d0f; --card:#17171b; --ink:#f4f2ee; --dim:#9a97a0;
+    --accent:#ff3d8a; --accent2:#ffd166; --line:#2a2a30;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+  .wrap{width:100%;max-width:560px;padding:20px 20px 48px;flex:1;display:flex;flex-direction:column}
+  .brand{font-size:11px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;margin-bottom:6px}
+  .progress{height:3px;background:var(--line);border-radius:2px;margin:14px 0 26px;overflow:hidden}
+  .progress i{display:block;height:100%;background:var(--accent);width:0%;transition:width .3s ease}
+  h1{font-size:26px;line-height:1.2;margin-bottom:14px}
+  h2{font-size:20px;line-height:1.3;margin-bottom:10px}
+  .section-tag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+  p{color:var(--dim);font-size:15px;line-height:1.55;margin-bottom:12px}
+  .q{font-size:21px;line-height:1.35;color:var(--ink);margin:6px 0 26px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 20px;margin-bottom:16px}
+  .btn{display:block;width:100%;padding:16px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:17px;font-weight:600;cursor:pointer;margin-top:18px}
+  .btn:disabled{opacity:.35;cursor:default}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--dim);font-weight:400;font-size:14px;padding:10px;margin-top:10px}
+  .slider-val{font-size:56px;font-weight:700;text-align:center;margin:8px 0 2px;color:var(--accent2);min-height:66px}
+  .slider-val.unset{color:var(--dim);font-size:22px;font-weight:400;padding-top:18px}
+  input[type=range]{width:100%;accent-color:var(--accent);height:44px}
+  .anchors{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:4px}
+  .choice{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 16px;color:var(--ink);font-size:16px;line-height:1.4;cursor:pointer;margin-bottom:12px}
+  .choice.sel{border-color:var(--accent);background:#221722}
+  .choice b{color:var(--accent2);margin-right:8px}
+  textarea{width:100%;min-height:110px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;color:var(--ink);font-size:16px;line-height:1.5;resize:vertical}
+  select{width:100%;padding:15px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--ink);font-size:16px}
+  .hint{font-size:13px;color:var(--dim);margin-top:8px}
+  .err{color:var(--accent);font-size:14px;margin-top:10px;display:none}
+  .done-tick{font-size:52px;text-align:center;margin:30px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">Uncertainty Experts</div>
+  <div class="progress"><i id="bar"></i></div>
+  <div id="screen"></div>
+  <div class="err" id="err"></div>
+</div>
+
+<script>
+/* ============ CONFIG ============ */
+const SUPABASE_URL = "https://aevfmmgqfngygnfxcvec.supabase.co";
+const SUPABASE_KEY = "sb_publishable_mHR6CteMYx7ZlnyIoZorvg_rDliOubk"; // publishable, insert-only under RLS
+const TABLE = "url_assessment_responses";
+const clientCode = new URLSearchParams(location.search).get("c") || "test";
+
+/* ============ ITEMS (placeholder wording pending Katherine's validated short forms) ============ */
+const SECTORS = ["Financial services","Technology","Media and creative","Healthcare and life sciences","Public sector and government","Charity and non-profit","Energy and utilities","Professional services","Consumer and retail","Education","Manufacturing and engineering","Other"];
+
+const steps = [
+ {type:"intro"},
+ {type:"scale", id:"CT1", tag:"Under pressure", q:"When a deadline is close, I think about getting the thing done, not about whether it is the right thing to do."},
+ {type:"scale", id:"CT2", tag:"Under pressure", q:"Under pressure, I plan in days and weeks, not months and years."},
+ {type:"scale", id:"CT3", tag:"Under pressure", q:"The more urgent things get, the shorter my time horizon becomes."},
+ {type:"scale", id:"NR1", tag:"Under pressure", q:"When I am sure I am right, I do not spend much time on other people's arguments."},
+ {type:"scale", id:"NR2", tag:"Under pressure", q:"When the stakes are high, I find it hard to see the problem from someone else's point of view."},
+ {type:"scale", id:"NR3", tag:"Under pressure", q:"Under pressure, I go back to the sources and people I already know."},
+ {type:"scale", id:"CL1", tag:"Under pressure", q:"I generally make snap decisions."},
+ {type:"scale", id:"CL2", tag:"Under pressure", q:"I often decide on the spur of the moment, just to get the decision off my desk."},
+ {type:"scale", id:"CL3", tag:"Under pressure", q:"I would rather make a quick decision than sit with not knowing."},
+ {type:"scale", id:"UR1", tag:"Under pressure", q:"Under time pressure, I make the call before I am ready, just to end the discomfort."},
+ {type:"text", id:"QD1", tag:"In your own words", q:"Bring to mind a decision you are carrying at the moment. Is it moving too fast or too slow, and what is setting the pace?"},
+ {type:"text", id:"QD2", tag:"In your own words", q:"Think of the best decision you have ever made amid real uncertainty. What made it possible?"},
+ {type:"text", id:"QD3", tag:"In your own words", q:"If the way you personally make decisions under pressure stays exactly as it is, what will it cost you over the next 12 months?"},
+ {type:"select", id:"DSEC", tag:"About you", q:"Which sector do you work in?", opts:SECTORS},
+ {type:"select", id:"DLVL", tag:"About you", q:"Which best describes your level?", opts:["C-Suite","Senior leadership team","Manager","Individual contributor"]},
+ {type:"select", id:"DTEN", tag:"About you", q:"How long have you been in this organisation?", opts:["Under 1 year","1 to 5 years","Over 5 years"]},
+ {type:"submit"}
+];
+
+const answers = {};
+let idx = 0, current = null;
+
+function bar(){ document.getElementById("bar").style.width = Math.round(idx/(steps.length-1)*100)+"%"; }
+function el(html){ const s=document.getElementById("screen"); s.innerHTML=html; document.getElementById("err").style.display="none"; window.scrollTo(0,0); }
+function next(){ idx++; render(); }
+
+function render(){
+  bar();
+  const st = steps[idx]; current = st;
+  if(st.type==="intro"){
+    el(`<h1>The Uncertainty Ready Leader Assessment</h1>
+      <div class="card"><p>Ahead of your Uncertainty Ready Leader session, this short assessment takes a baseline reading of how you currently navigate uncertainty. It takes about five minutes. There are no right answers, so answer on instinct.</p>
+      <p>Your responses are completely anonymous. We do not collect your name or email. Results are only ever reported in aggregate, held securely in our own UK database, and used to shape your session.</p></div>
+      <button class="btn" onclick="next()">Begin</button>`);
+  }
+  else if(st.type==="scale"){
+    el(`<div class="section-tag">${st.tag}</div>
+      <div class="q">${st.q}</div>
+      <div class="slider-val unset" id="val">Slide to choose</div>
+      <input type="range" min="0" max="10" step="1" value="5" id="rng"
+        oninput="const v=document.getElementById('val');v.textContent=this.value;v.classList.remove('unset');document.getElementById('nx').disabled=false;">
+      <div class="anchors"><span>${st.a0||"Not at all like me"}</span><span>${st.a10||"Completely like me"}</span></div>
+      <button class="btn" id="nx" disabled onclick="answers['${st.id}']=Number(document.getElementById('rng').value);next()">Continue</button>`);
+  }
+  else if(st.type==="text"){
+    el(`<div class="section-tag">${st.tag}</div>
+      <div class="q">${st.q}</div>
+      <textarea id="tx" placeholder="Write as much or as little as you like."></textarea>
+      <button class="btn" onclick="answers['${st.id}']=document.getElementById('tx').value.trim();next()">Continue</button>`);
+  }
+  else if(st.type==="select"){
+    const opts = st.opts.map(o=>`<option value="${o}">${o}</option>`).join("");
+    el(`<div class="section-tag">${st.tag}</div>
+      <div class="q">${st.q}</div>
+      <select id="sel"><option value="" selected disabled>Choose one</option>${opts}</select>
+      <button class="btn" onclick="const v=document.getElementById('sel').value; if(v){answers['${st.id}']=v;next()}">Continue</button>`);
+  }
+  else if(st.type==="submit"){ submit(); }
+}
+
+function mean(ids){
+  const vals = ids.map(id=>answers[id]);
+  return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*100)/100;
+}
+
+async function submit(){
+  el(`<h2>Saving your answers…</h2>`);
+  const contraction = mean(["CT1","CT2","CT3"]);
+  const narrowing = mean(["NR1","NR2","NR3"]);
+  const closure = mean(["CL1","CL2","CL3"]);
+  const rtc = Math.round((contraction+narrowing+closure)/3*100)/100;
+  const payload = {
+    client_code: clientCode,
+    items: {CT1:answers.CT1,CT2:answers.CT2,CT3:answers.CT3,NR1:answers.NR1,NR2:answers.NR2,NR3:answers.NR3,CL1:answers.CL1,CL2:answers.CL2,CL3:answers.CL3,UR1:answers.UR1},
+    contraction, narrowing, closure, rtc,
+    qual: {q1:answers.QD1||"", q2:answers.QD2||"", q3:answers.QD3||""},
+    demo: {sector:answers.DSEC, level:answers.DLVL, tenure:answers.DTEN}
+  };
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Prefer":"return=minimal"},
+      body: JSON.stringify(payload)
+    });
+    if(!r.ok) throw new Error("save failed "+r.status);
+    el(`<div class="done-tick">&#10003;</div>
+      <h2 style="text-align:center">Thank you.</h2>
+      <p style="text-align:center">That's everything. Your answers are saved anonymously and will shape your Uncertainty Ready Leader session.</p>`);
+    document.getElementById("bar").style.width="100%";
+  }catch(e){
+    el(`<h2>Something went wrong.</h2><p>Your connection may have dropped. Your answers are still on this screen's memory.</p>
+      <button class="btn" onclick="submit()">Try again</button>`);
+  }
+}
+render();
+</script>
+</body>
+</html>
