@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uncertainty-Ready Leader · Results</title>
+<style>
+  :root{ --ink:#1c1a18; --paper:#faf7f2; --mag:#c1006a; --magsoft:#f3cfe2; --grey:#b9b2a9; --greysoft:#e7e1d8; --line:#e2dad0; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; color:var(--ink); font-family:Arial, Helvetica, sans-serif; line-height:1.45; background:var(--paper);
+    background-image:linear-gradient(#e7e0d4 1px,transparent 1px),linear-gradient(90deg,#e7e0d4 1px,transparent 1px); background-size:26px 26px; }
+  .wrap{ max-width:1100px; margin:0 auto; padding:28px 22px 50px; }
+  .top{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; border-bottom:2px solid var(--ink); padding-bottom:14px; }
+  h1{ font-size:30px; margin:0 0 4px; }
+  .sub{ font-size:14px; color:#6b6259; margin:0; }
+  .live{ font-size:13px; color:#6b6259; text-align:right; }
+  .live b{ color:var(--mag); }
+  .hero{ background:var(--mag); color:#fff; border-radius:16px; padding:24px 26px; margin-top:20px; }
+  .lab{ font-size:13px; text-transform:uppercase; letter-spacing:.6px; opacity:.9; margin:0 0 8px; }
+  .row{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  .num{ font-size:60px; font-weight:bold; line-height:1; }
+  .arrow{ font-size:30px; opacity:.7; }
+  .pill{ font-size:18px; font-weight:bold; padding:4px 14px; border-radius:999px; background:rgba(255,255,255,.2); }
+  .desc{ font-size:14px; opacity:.9; margin:10px 0 0; max-width:620px; }
+  .spine{ background:var(--ink); color:var(--paper); border-radius:14px; padding:22px 26px; margin-top:16px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:18px; align-items:center; }
+  .spine .num{ font-size:46px; }
+  .march{ font-size:14px; opacity:.75; margin-top:8px; }
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:16px; }
+  @media(max-width:820px){ .grid{ grid-template-columns:1fr; } .num{ font-size:44px; } }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
+  .card h3{ margin:0 0 2px; font-size:18px; }
+  .card .ord{ color:var(--mag); }
+  .card .tag{ font-size:12.5px; color:#8a8178; margin:0 0 12px; }
+  .big{ font-size:36px; font-weight:bold; }
+  .d{ font-size:15px; font-weight:bold; padding:2px 10px; border-radius:999px; }
+  .up{ background:var(--magsoft); color:var(--mag); } .down{ background:#fbe3d6; color:#b4500f; } .flat{ background:var(--greysoft); color:#6b6259; }
+  .bars{ margin-top:12px; }
+  .bar{ height:14px; border-radius:7px; margin:6px 0; background:var(--greysoft); position:relative; overflow:hidden; }
+  .bar i{ position:absolute; left:0; top:0; bottom:0; border-radius:7px; }
+  .bl{ font-size:12px; color:#8a8178; }
+  .foot{ font-size:12px; color:#8a8178; margin-top:22px; border-top:1px solid var(--line); padding-top:12px; }
+  .empty{ background:#fff; border:1px dashed var(--line); border-radius:14px; padding:20px; margin-top:16px; font-size:14px; color:#6b6259; text-align:center; display:none; }
+  button{ border:1px solid var(--line); background:#fff; border-radius:999px; padding:7px 14px; font-size:13px; cursor:pointer; color:#6b6259; font-family:inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>The Uncertainty-Ready Leader</h1>
+      <p class="sub">innocent senior leaders · 1 October 2026 · baseline at the open, re-measure before the close</p>
+    </div>
+    <div class="live">
+      <div><b id="nmatched">0</b> matched · <span id="npre">0</span> pre / <span id="npost">0</span> post</div>
+      <div id="stamp">connecting…</div>
+      <div style="margin-top:6px"><button id="refresh">Refresh</button></div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <p class="lab">Hold the Open · the composite of Horizon, Altitude and Agency</p>
+    <div class="row">
+      <span class="num" id="utosPre">–</span><span class="arrow">→</span><span class="num" id="utosPost">–</span><span class="pill" id="utosD">·</span>
+    </div>
+    <p class="desc">Whether the room can hold a decision open without tipping into avoidance. Out of 10.</p>
+  </div>
+
+  <div class="spine">
+    <div>
+      <p class="lab">The Decisiveness Paradox · share choosing the better outcome over looking decisive</p>
+      <div class="row"><span class="num" id="parPre">–</span><span class="arrow">→</span><span class="num" style="color:var(--magsoft)" id="parPost">–</span></div>
+      <div class="march">March 2026 Leadership Lab: 19% of innocent leaders chose the better outcome (81% chose decisive).</div>
+    </div>
+    <div style="text-align:right"><p class="lab">Shift</p><span class="num" id="parD">·</span></div>
+  </div>
+
+  <div class="empty" id="empty">No responses in yet for this session. Refresh once the room has answered.</div>
+  <div class="grid" id="cards"></div>
+
+  <div class="foot">
+    Live from the UK database, aggregates only. Individual answers and emails never leave it. Session code <b id="code"></b>. Auto-refreshes every 20 seconds.
+  </div>
+</div>
+<script>
+const SB_URL = "https://aevfmmgqfngygnfxcvec.supabase.co";
+const SB_KEY = "sb_publishable_mHR6CteMYx7ZlnyIoZorvg_rDliOubk";
+const SESSION = new URLSearchParams(location.search).get("s") || "innocent-2026-10-01";
+document.getElementById("code").textContent = SESSION;
+const LENSES = [
+  { key:"horizon",  label:"Horizon",  tag:"Lengthen the time" },
+  { key:"altitude", label:"Altitude", tag:"Widen the view" },
+  { key:"agency",   label:"Agency",   tag:"Own your part" }
+];
+const ok = v => v!==null && v!==undefined && !isNaN(v);
+const f1 = v => ok(v) ? Number(v).toFixed(1) : "–";
+const pc = v => ok(v) ? Math.round(v)+"%" : "–";
+function delta(el, d, pts){
+  if(!ok(d)){ el.textContent="·"; el.className = el.className.replace(/ (up|down|flat)/,"") + " flat"; return; }
+  el.textContent = (d>=0?"+":"") + (pts ? Math.round(d)+" pts" : d.toFixed(1));
+  const cls = Math.abs(d) < (pts?1:0.15) ? "flat" : (d>0 ? "up" : "down");
+  el.className = el.className.replace(/ (up|down|flat)/g,"") + " " + cls;
+}
+function set(id,t){ document.getElementById(id).textContent = t; }
+function render(a){
+  const pre=a.pre||{}, post=a.post||{};
+  set("nmatched", a.matched_n||0); set("npre", a.pre_n||0); set("npost", a.post_n||0);
+  set("stamp", "updated " + new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}));
+  document.getElementById("empty").style.display = (a.pre_n||a.post_n) ? "none" : "block";
+  set("utosPre", f1(pre.utos)); set("utosPost", f1(post.utos));
+  delta(document.getElementById("utosD"), ok(pre.utos)&&ok(post.utos) ? post.utos-pre.utos : null);
+  set("parPre", pc(pre.paradox_b_pct)); set("parPost", pc(post.paradox_b_pct));
+  const pd = ok(pre.paradox_b_pct)&&ok(post.paradox_b_pct) ? post.paradox_b_pct-pre.paradox_b_pct : null;
+  set("parD", ok(pd) ? (pd>=0?"+":"")+Math.round(pd)+" pts" : "·");
+  const host=document.getElementById("cards"); host.innerHTML="";
+  LENSES.forEach((L,i)=>{
+    const s0=pre[L.key], s1=post[L.key];
+    const c=document.createElement("div"); c.className="card";
+    c.innerHTML = '<h3><span class="ord">'+(i+1)+'.</span> '+L.label+'</h3><p class="tag">'+L.tag+'</p>'+
+      '<div class="row"><span class="big" style="color:var(--grey)">'+f1(s0)+'</span><span class="arrow" style="opacity:.4">→</span>'+
+      '<span class="big" style="color:var(--mag)">'+f1(s1)+'</span><span class="d" id="d'+i+'">·</span></div>'+
+      '<div class="bars"><div class="bl">Pre</div><div class="bar"><i style="width:'+(ok(s0)?s0*10:0)+'%;background:var(--grey)"></i></div>'+
+      '<div class="bl">Post</div><div class="bar"><i style="width:'+(ok(s1)?s1*10:0)+'%;background:var(--mag)"></i></div></div>';
+    host.appendChild(c);
+    delta(document.getElementById("d"+i), ok(s0)&&ok(s1) ? s1-s0 : null);
+  });
+}
+async function refresh(){
+  try{
+    const r = await fetch(SB_URL+"/rest/v1/rpc/session_aggregates", { method:"POST",
+      headers:{ apikey:SB_KEY, Authorization:"Bearer "+SB_KEY, "Content-Type":"application/json" },
+      body: JSON.stringify({ p_session: SESSION }) });
+    if(!r.ok) throw new Error(r.status);
+    render(await r.json());
+  }catch(e){ set("stamp","could not reach the database, retrying"); }
+}
+document.getElementById("refresh").addEventListener("click", refresh);
+refresh(); setInterval(refresh, 20000);
+</script>
+</body>
+</html>
