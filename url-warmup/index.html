@@ -493,7 +493,6 @@ function commit(choice,forced){
     time: CLOCK-timeLeft,
     forced: !!forced
   });
-  postLive();                 // update this player's board row now, so the room sees them move
   round++;
   if(round<ROUNDS)startRound();
   else finishSession();
