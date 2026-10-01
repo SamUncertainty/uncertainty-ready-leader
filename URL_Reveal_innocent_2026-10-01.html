@@ -1,0 +1,51 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Redefining Decisiveness · Reveal</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;height:100%;background:#5736F5;overflow:hidden;font-family:Arial,Helvetica,sans-serif}
+iframe{position:fixed;inset:0;width:100%;height:100%;border:0}
+#ov{position:fixed;inset:0;background:#5736F5;color:#F6F2F7;display:flex;flex-direction:column;justify-content:center;padding:0 8vw;transition:opacity 1.2s ease;z-index:2;
+ background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:48px 48px}
+#ov.gone{opacity:0;pointer-events:none}
+.k{font-size:1.1vw;letter-spacing:.3em;font-weight:700;color:#C4FF02;text-transform:uppercase}
+h1{font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;font-size:10vw;line-height:.9;margin:1.5vw 0 0}
+h1 span{color:#C4FF02}
+#status{font-family:'Bebas Neue',Impact,sans-serif;font-size:3.4vw;margin-top:2.5vw;color:#FF4DFF;min-height:4vw}
+#count{font-size:1.6vw;margin-top:1vw;opacity:.9}
+#count b{font-family:'Bebas Neue',Impact,sans-serif;font-size:3vw;color:#C4FF02;font-weight:400;vertical-align:-.3vw}
+#bar{height:1.2vw;background:rgba(255,255,255,.18);border-radius:1vw;margin-top:2.5vw;width:60vw;overflow:hidden;visibility:hidden}
+#fill{height:100%;width:0;background:#C4FF02;border-radius:1vw;transition:width 5s linear}
+button{margin-top:3vw;align-self:flex-start;font-family:'Bebas Neue',Impact,sans-serif;font-size:2.6vw;padding:.8vw 3vw;border:0;border-radius:3vw;background:#C4FF02;color:#261E20;cursor:pointer}
+button[disabled]{opacity:.4;cursor:default}
+</style></head><body>
+<iframe id="board" title="Results"></iframe>
+<div id="ov">
+ <div class="k">The Uncertainty-Ready Leader</div>
+ <h1>REDEFINING<br><span>DECISIVENESS</span></h1>
+ <div id="status">Processing results</div>
+ <div id="count">Connecting to the room…</div>
+ <div id="bar"><div id="fill"></div></div>
+ <button id="go">Reveal</button>
+</div>
+<script>
+var s=new URLSearchParams(location.search).get('s')||'innocent-2026-10-01';
+var fr=document.getElementById('board');
+fr.src='URL_Results_Board_innocent_2026-10-01.html?s='+encodeURIComponent(s);
+function txt(id){try{var e=fr.contentDocument.getElementById(id);return e?e.textContent.trim():null}catch(x){return null}}
+function poll(){var m=txt('nmatched'),pre=txt('npre'),post=txt('npost');
+ if(m!==null){document.getElementById('count').innerHTML='<b>'+m+'</b> paired results in &nbsp;·&nbsp; '+pre+' before, '+post+' after';}}
+setInterval(poll,1500);
+// refresh the board's data every 10s while waiting
+setInterval(function(){try{var b=fr.contentDocument.getElementById('refresh');if(b&&!started)b.click()}catch(x){}},10000);
+var started=false;
+var steps=['Matching your before and after','Reading Horizon','Reading Altitude','Reading Agency','Calculating Hold the Open'];
+function reveal(){if(started)return;started=true;var go=document.getElementById('go');go.disabled=true;
+ try{var b=fr.contentDocument.getElementById('refresh');if(b)b.click()}catch(x){}
+ document.getElementById('bar').style.visibility='visible';
+ requestAnimationFrame(function(){document.getElementById('fill').style.width='100%'});
+ var i=0,st=document.getElementById('status');st.textContent=steps[0];
+ var t=setInterval(function(){i++;if(i<steps.length){st.textContent=steps[i]}else{clearInterval(t);st.textContent='Ready';
+   setTimeout(function(){document.getElementById('ov').classList.add('gone')},500)}},1000);}
+document.getElementById('go').addEventListener('click',reveal);
+document.addEventListener('keydown',function(e){if(['ArrowRight','PageDown',' ','Enter'].indexOf(e.key)>-1){e.preventDefault();reveal()}});
+</script></body></html>
